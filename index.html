@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CineMatch Pro v3</title>
+    <title>Eiga 映画 Pro</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍿</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -27,20 +27,23 @@
     </div>
 
     <div id="user-selection" class="hidden flex flex-col items-center justify-center h-screen space-y-8">
-        <h1 class="text-5xl font-black text-purple-900 tracking-tighter drop-shadow-sm">CineMatch</h1>
+        <h1 class="text-5xl font-black text-purple-900 tracking-tighter drop-shadow-sm">Eiga 映画</h1>
         <div id="profile-container" class="flex flex-wrap justify-center gap-6 w-full px-4"></div>
     </div>
 
     <div id="app-main" class="hidden max-w-md mx-auto space-y-4">
         <header class="flex justify-between items-center bg-white/50 p-3 rounded-3xl shadow-sm backdrop-blur-sm border border-white">
             <div class="flex items-center gap-3">
-                <button id="main-avatar" class="text-3xl bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg active:scale-90 border-2 border-purple-100"></button>
+                <button onclick="changeEmoji()" id="main-avatar" class="text-3xl bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg active:scale-90 border-2 border-purple-100"></button>
                 <div>
                     <p class="text-[9px] font-black text-purple-400 uppercase tracking-widest">Es tu turno,</p>
                     <h2 id="welcome" class="text-2xl font-black text-purple-900 leading-none"></h2>
                 </div>
             </div>
-            <button onclick="location.reload()" class="bg-white p-3 rounded-full text-sm shadow-md active:scale-90 font-bold">🔄</button>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-purple-300 uppercase tracking-widest">Eiga 映画</span>
+                <button onclick="location.reload()" class="bg-white p-3 rounded-full text-sm shadow-md active:scale-90 font-bold">🔄</button>
+            </div>
         </header>
 
         <nav class="flex justify-around bg-white/70 rounded-2xl overflow-hidden shadow-sm backdrop-blur-sm border border-white">
@@ -93,10 +96,18 @@
         
         <section id="tab-historial" class="tab-content hidden space-y-3 animate-up"></section>
 
-        <section id="tab-favoritos" class="tab-content hidden space-y-3 animate-up">
+        <section id="tab-favoritos" class="tab-content hidden space-y-3 animate-up pb-10">
             <h3 class="font-black text-sm text-purple-900 pl-2">Mis Favoritos ⭐</h3>
-            <p class="text-[10px] text-gray-500 pl-2 leading-tight">Toca un actor o director para ver todas sus películas.</p>
-            <div id="fav-list" class="grid grid-cols-2 gap-3 mt-3"></div>
+            <p class="text-[10px] text-gray-500 pl-2 leading-tight">Toca un actor o director para ver sus películas.</p>
+            <div id="fav-list" class="grid grid-cols-3 gap-2 mt-3"></div>
+            
+            <div id="fav-movies-container" class="hidden mt-6 pt-4 border-t-2 border-purple-100">
+                <div class="flex justify-between items-center mb-4 pl-2">
+                    <h4 id="fav-movies-title" class="font-black text-xs text-purple-900"></h4>
+                    <button onclick="closeFavMovies()" class="text-[10px] bg-red-100 text-red-600 px-3 py-1 rounded-lg font-black active:scale-95 shadow-sm">CERRAR ✕</button>
+                </div>
+                <div id="fav-movies-results" class="space-y-3"></div>
+            </div>
         </section>
     </div>
 
@@ -131,8 +142,7 @@
                         <div id="detail-cast" class="font-bold text-gray-800 leading-tight space-y-1"></div>
                     </div>
                 </div>
-                <div id="detail-actions" class="pt-5 space-y-2">
-                    </div>
+                <div id="detail-actions" class="pt-5 space-y-2"></div>
             </div>
         </div>
     </div>
@@ -166,8 +176,6 @@
         let currentMovieData = null; 
         let activeMovieIdForFeedback = null;
         let searchPage = 1;
-        let searchMode = 'discover'; // 'discover' o 'person'
-        let searchPersonId = null;
 
         const genres = [
             {id:28,name:"Acción"}, {id:35,name:"Comedia"}, {id:18,name:"Drama"}, {id:27,name:"Terror"},
@@ -203,6 +211,25 @@
             await loadData();
         }
 
+        // --- SOLUCIÓN BUG EMOJI ---
+        async function changeEmoji() {
+            const newEmoji = prompt("Pega un nuevo emoji para tu perfil (ej: 🐉):");
+            if(newEmoji && newEmoji.trim() !== "") {
+                document.getElementById('main-avatar').innerText = newEmoji;
+                const p = profiles.find(x => x.user === currentUser);
+                if(p) p.emoji = newEmoji; // Actualiza en memoria
+
+                try {
+                    await fetch(GAS_URL, { 
+                        method: 'POST', 
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({ action: 'updateEmoji', user: currentUser, emoji: newEmoji }) 
+                    });
+                } catch (e) { console.error("Error guardando emoji", e); }
+            }
+        }
+
         async function loadData() {
             try {
                 const [histRes, favRes] = await Promise.all([
@@ -211,7 +238,7 @@
                 ]);
                 globalHistory = await histRes.json();
                 globalFavorites = await favRes.json();
-                if(!Array.isArray(globalFavorites)) globalFavorites = []; // Seguro
+                if(!Array.isArray(globalFavorites)) globalFavorites = []; 
                 renderWatchlist();
                 renderHistoryTab();
                 renderFavoritesTab();
@@ -236,7 +263,11 @@
             });
         }
 
-        // --- SISTEMA DE BÚSQUEDA Y PAGINACIÓN ---
+        // --- BÚSQUEDA Y FILTRO ANTI-FUTURO ---
+        function getTodayDate() {
+            return new Date().toISOString().split('T')[0]; // Ej: 2026-02-27
+        }
+
         async function fetchMovies(isLoadMore = false) {
             const container = document.getElementById('movie-results');
             const btnMore = document.getElementById('btn-load-more');
@@ -244,7 +275,6 @@
             
             if(!isLoadMore) {
                 searchPage = 1;
-                searchMode = 'discover';
                 container.innerHTML = "<p class='text-center p-6 text-xs font-bold text-purple-400 animate-pulse uppercase'>Buscando...</p>";
                 btnMore.classList.add('hidden');
             } else {
@@ -252,25 +282,26 @@
                 btnMore.innerText = "Cargando...";
             }
 
-            let url = "";
-            if (searchMode === 'discover') {
-                const genreIds = selectedGenres.join(',');
-                const region = document.getElementById('region').value;
-                const maxDur = document.getElementById('duration').value;
-                const decade = document.getElementById('decade').value;
+            const genreIds = selectedGenres.join(',');
+            const region = document.getElementById('region').value;
+            const maxDur = document.getElementById('duration').value;
+            const decade = document.getElementById('decade').value;
+            const today = getTodayDate(); // FILTRO ANTI-FUTURO
 
-                url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&page=${searchPage}&with_runtime.lte=${maxDur}`;
-                if(genreIds) url += `&with_genres=${genreIds}`;
-                if(region) url += `&with_origin_country=${region}`;
-                
-                if(decade === "classic") { url += `&primary_release_date.lte=1979-12-31`; } 
-                else if(decade) {
-                    const yearStart = parseInt(decade);
-                    url += `&primary_release_date.gte=${yearStart}-01-01&primary_release_date.lte=${yearStart+9}-12-31`;
-                }
-            } else if (searchMode === 'person') {
-                // Búsqueda por actor/director
-                url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&page=${searchPage}&with_people=${searchPersonId}`;
+            let url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&page=${searchPage}&with_runtime.lte=${maxDur}`;
+            if(genreIds) url += `&with_genres=${genreIds}`;
+            if(region) url += `&with_origin_country=${region}`;
+            
+            // Lógica combinada de fechas y NO FUTURO
+            if(decade === "classic") { 
+                url += `&primary_release_date.lte=1979-12-31`; 
+            } else if(decade) {
+                const yearStart = parseInt(decade);
+                const yearEnd = yearStart + 9;
+                const endLte = `${yearEnd}-12-31` > today ? today : `${yearEnd}-12-31`; // Evita futuro si la década es actual
+                url += `&primary_release_date.gte=${yearStart}-01-01&primary_release_date.lte=${endLte}`;
+            } else {
+                url += `&primary_release_date.lte=${today}`; // Si no hay década, bloquea futuro por defecto
             }
 
             try {
@@ -286,7 +317,6 @@
                 data.results.forEach(m => {
                     const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300?text=Sin+Poster';
                     
-                    // Buscar estado del usuario para esta peli
                     const myInteractions = globalHistory.filter(h => h.usuario === currentUser && h.id_tmdb == m.id);
                     const lastState = myInteractions.length > 0 ? myInteractions[myInteractions.length - 1] : null;
                     let badge = '';
@@ -314,34 +344,61 @@
             } catch(e) { if(!isLoadMore) container.innerHTML = "<p class='text-center text-xs text-red-500 font-bold'>Error.</p>"; }
         }
 
+        // --- FAVORITOS INLINE ---
         async function fetchMoviesByPerson(personId, personName) {
-            showTab('explorar');
-            searchMode = 'person';
-            searchPersonId = personId;
-            document.getElementById('search-title').innerText = `Películas de: ${personName}`;
-            await fetchMovies(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('fav-movies-container').classList.remove('hidden');
+            document.getElementById('fav-movies-title').innerText = `Películas de ${personName}`;
+            const container = document.getElementById('fav-movies-results');
+            container.innerHTML = "<p class='text-center p-4 text-xs font-bold text-purple-400 animate-pulse'>Buscando...</p>";
+            
+            const today = getTodayDate(); // ANTI-FUTURO
+            const url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&with_people=${personId}&primary_release_date.lte=${today}`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                container.innerHTML = "";
+                
+                if(data.results.length === 0) {
+                    container.innerHTML = "<p class='text-xs text-center text-gray-500'>No se encontraron películas.</p>";
+                    return;
+                }
+
+                data.results.slice(0, 10).forEach(m => {
+                    const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300?text=Sin+Poster';
+                    container.innerHTML += `
+                        <div onclick="openMovieDetail(${m.id})" class="bg-white p-3 flex gap-3 animate-up shadow-sm cursor-pointer hover:bg-gray-50 rounded-2xl border border-purple-50">
+                            <img src="${posterUrl}" class="w-14 h-20 rounded-md object-cover shadow-sm">
+                            <div class="flex-1 flex flex-col justify-center">
+                                <h4 class="font-black text-[13px] leading-tight text-gray-800">${m.title}</h4>
+                                <p class="text-[9px] text-gray-500 font-bold uppercase mt-1">${m.release_date ? m.release_date.split('-')[0] : 'N/A'} • ⭐ ${m.vote_average.toFixed(1)}</p>
+                            </div>
+                        </div>`;
+                });
+            } catch(e) { container.innerHTML = "<p class='text-center text-xs text-red-500'>Error.</p>"; }
         }
 
-        // --- FICHA TÉCNICA UNIVERSAL Y FAVORITOS ---
+        function closeFavMovies() {
+            document.getElementById('fav-movies-container').classList.add('hidden');
+        }
+
+        // --- FICHA TÉCNICA UNIVERSAL Y ESTRELLAS ---
         function checkFav(id) {
             return globalFavorites.some(f => f.user === currentUser && String(f.id) === String(id));
         }
 
         async function toggleFav(type, id, name) {
-            event.stopPropagation(); // Evita que cierre modales si hay clicks raros
+            event.stopPropagation(); 
             const isFav = checkFav(id);
             
-            // Actualizar UI Inmediatamente (Optimistic UI)
             const icon = document.getElementById(`fav-icon-${id}`);
             if(icon) icon.innerText = isFav ? "☆" : "⭐";
             
             if(isFav) globalFavorites = globalFavorites.filter(f => !(f.user === currentUser && String(f.id) === String(id)));
             else globalFavorites.push({user: currentUser, tipo: type, id: id, nombre: name});
             
-            // Enviar a Backend
             await fetch(GAS_URL, { 
-                method: 'POST', mode: 'no-cors', 
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ action: 'toggleFavorite', user: currentUser, tipo: type, id_persona: id, nombre: name }) 
             });
             renderFavoritesTab();
@@ -369,13 +426,11 @@
                 document.getElementById('detail-rating').innerText = `⭐ ${det.vote_average.toFixed(1)}`;
                 document.getElementById('detail-overview').innerText = det.overview || "Sinopsis no disponible.";
 
-                // Render Director con Estrella
                 if(directorObj) {
                     const star = checkFav(directorObj.id) ? "⭐" : "☆";
                     document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200" onclick="toggleFav('Director', ${directorObj.id}, '${directorObj.name.replace(/'/g,"")}')">${directorObj.name} <span id="fav-icon-${directorObj.id}" class="text-xs">${star}</span></span>`;
                 } else { document.getElementById('detail-director').innerText = "Desconocido"; }
 
-                // Render Actores con Estrella
                 document.getElementById('detail-cast').innerHTML = castObjs.map(c => {
                     const star = checkFav(c.id) ? "⭐" : "☆";
                     return `<div class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 w-max" onclick="toggleFav('Actor', ${c.id}, '${c.name.replace(/'/g,"")}')">${c.name} <span id="fav-icon-${c.id}" class="text-xs">${star}</span></div>`;
@@ -383,25 +438,21 @@
 
                 currentMovieData = { id: det.id, title: det.title.replace(/'/g, ""), poster: det.poster_path, director: directorObj?.name || "", cast: castObjs.map(c=>c.name).join(','), year: year };
 
-                // Determinar estado actual (Para la Botonera)
                 const myInteractions = globalHistory.filter(h => h.usuario === currentUser && String(h.id_tmdb) === String(det.id));
                 const lastState = myInteractions.length > 0 ? myInteractions[myInteractions.length - 1] : null;
                 
                 const actionsDiv = document.getElementById('detail-actions');
                 
                 if (!lastState || lastState.vista_completa === "DESCARTADA") {
-                    // Estado Nuevo
                     actionsDiv.innerHTML = `
                         <button onclick="changeInteractionState('Mucho', 'FALSE')" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-200 active:scale-95 text-xs">AÑADIR A PENDIENTES 🔥</button>
                     `;
                 } else if (lastState.vista_completa === "FALSE") {
-                    // Está Pendiente: Opción de ver o descartar
                     actionsDiv.innerHTML = `
                         <button onclick="openFeedbackModal('${det.id}', '${det.title.replace(/'/g,"")}')" class="w-full py-3 bg-green-500 text-white rounded-xl font-black shadow-lg shadow-green-200 active:scale-95 text-xs mb-2">MARCAR COMO VISTA ✅</button>
                         <button onclick="changeInteractionState('Ninguna', 'DESCARTADA')" class="w-full py-2 bg-gray-100 text-red-500 rounded-xl font-bold border border-red-100 active:scale-95 text-[10px] uppercase">🗑️ Quitar de Pendientes</button>
                     `;
                 } else if (lastState.vista_completa === "TRUE") {
-                    // Está Vista: Opción de devolver a pendientes
                     actionsDiv.innerHTML = `
                         <div class="bg-green-50 text-green-700 p-3 rounded-xl text-center text-xs font-bold border border-green-200 mb-2">Ya la viste y le diste: ${lastState.calificacion}</div>
                         <button onclick="changeInteractionState('Finde', 'FALSE')" class="w-full py-2 bg-white text-purple-600 rounded-xl font-bold border border-purple-200 active:scale-95 text-[10px] uppercase">↩️ Devolver a Pendientes</button>
@@ -415,13 +466,13 @@
 
         // --- SISTEMA EVENT SOURCING ---
         function getLatestStates() {
-            // Retorna un Map con el último estado de cada peli para el usuario actual
             const myInteractions = globalHistory.filter(h => h.usuario === currentUser);
             const latest = new Map();
             myInteractions.forEach(h => latest.set(h.id_tmdb, h));
             return Array.from(latest.values());
         }
 
+        // --- SOLUCIÓN BOTÓN DIRECTO EN PENDIENTES ---
         function renderWatchlist() {
             const container = document.getElementById('tab-prioridades');
             const states = getLatestStates();
@@ -434,12 +485,12 @@
 
             pending.forEach(p => {
                 container.innerHTML += `
-                    <div onclick="openMovieDetail(${p.id_tmdb})" class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-purple-50 mb-3 cursor-pointer active:scale-95 transition">
-                        <div>
+                    <div onclick="openMovieDetail(${p.id_tmdb})" class="bg-white p-3 rounded-2xl flex justify-between items-center shadow-sm border border-purple-50 mb-3 cursor-pointer active:scale-[0.98] transition">
+                        <div class="flex-1 pr-2">
                             <p class="font-black text-[13px] text-gray-800 leading-tight">${p.titulo}</p>
                             <span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600 border border-purple-100">${p.prioridad}</span>
                         </div>
-                        <span class="text-xs">➔</span>
+                        <button onclick="event.stopPropagation(); openFeedbackModal('${p.id_tmdb}', '${p.titulo.replace(/'/g,"")}')" class="bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black shadow-lg shadow-green-200 active:scale-90 transition">VISTA ✅</button>
                     </div>`;
             });
         }
@@ -472,22 +523,20 @@
             
             container.innerHTML = "";
             if(myFavs.length === 0) {
-                container.innerHTML = "<div class='col-span-2 text-center p-6 bg-white/50 rounded-xl'><p class='text-xs text-gray-500 font-bold'>No has añadido favoritos.</p><p class='text-[9px] mt-1'>Abre una película y toca un director/actor.</p></div>";
+                container.innerHTML = "<div class='col-span-3 text-center p-6 bg-white/50 rounded-xl'><p class='text-xs text-gray-500 font-bold'>No hay favoritos.</p></div>";
                 return;
             }
 
             myFavs.forEach(f => {
                 container.innerHTML += `
-                    <div onclick="fetchMoviesByPerson(${f.id}, '${f.nombre.replace(/'/g,"")}')" class="bg-white p-3 rounded-xl shadow-sm border border-purple-100 flex flex-col items-center text-center cursor-pointer active:scale-95 transition">
+                    <div onclick="fetchMoviesByPerson(${f.id}, '${f.nombre.replace(/'/g,"")}')" class="bg-white p-2 rounded-xl shadow-sm border border-purple-100 flex flex-col items-center text-center cursor-pointer active:scale-95 transition">
                         <div class="text-xl mb-1">${f.tipo === 'Director' ? '🎬' : '🎭'}</div>
-                        <p class="font-black text-[11px] text-purple-900 leading-tight">${f.nombre}</p>
-                        <p class="text-[8px] uppercase font-bold text-gray-400 mt-1">${f.tipo}</p>
+                        <p class="font-black text-[10px] text-purple-900 leading-tight">${f.nombre}</p>
                     </div>
                 `;
             });
         }
 
-        // --- CAMBIOS DE ESTADO (Descartar, Devolver, etc) ---
         async function changeInteractionState(priority, watchedState) {
             const btn = event.target;
             btn.innerText = "⏳..."; btn.disabled = true;
@@ -497,10 +546,10 @@
                 title: currentMovieData.title, poster: currentMovieData.poster, 
                 director: currentMovieData.director, cast: currentMovieData.cast,
                 year: currentMovieData.year, watched: watchedState, priority: priority,
-                rating: "", comment: "" // Se blanquea al cambiar de estado manual
+                rating: "", comment: "" 
             };
 
-            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
             
             closeDetailModal();
             setTimeout(() => { loadData(); }, 800);
@@ -515,7 +564,7 @@
 
         function openFeedbackModal(id, title) {
             event.stopPropagation();
-            closeDetailModal(); // Cierra el fondo si está abierto
+            closeDetailModal(); 
             activeMovieIdForFeedback = id; 
             document.getElementById('f-movie-title').innerText = title;
             document.getElementById('feedback-modal').classList.remove('hidden');
@@ -526,16 +575,13 @@
             const btn = event.target;
             btn.innerText = "⏳ Guardando..."; btn.disabled = true;
             
-            // Re-rescatar data actual de la peli (si venimos del listado, quizas currentMovieData no está actualizado, pero el backend solo requiere ID, titulo, etc)
-            // Para asegurar integridad, pasamos vacíos los de API si no están, el backend los ignora.
-            
             const data = {
                 action: 'saveInteraction', user: currentUser, movie_id: activeMovieIdForFeedback,
                 title: document.getElementById('f-movie-title').innerText, watched: "TRUE",
                 rating: document.getElementById('f-rating').value, comment: document.getElementById('f-comment').value
             };
             
-            await fetch(GAS_URL, { method:'POST', mode:'no-cors', body:JSON.stringify(data)});
+            await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers: { 'Content-Type': 'text/plain' }, body:JSON.stringify(data)});
             
             btn.innerText = "GUARDAR VISTA ✅"; btn.disabled = false;
             closeFeedbackModal(); 
