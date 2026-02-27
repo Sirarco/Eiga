@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CineMatch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --mint: #e2f3f5; --lavender: #f3e8ff; --peach: #fff1e6;
+            --text: #4a5568;
+        }
+        body {
+            background: linear-gradient(135deg, var(--mint), var(--lavender));
+            min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+        }
+        .genre-bubble {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .genre-bubble.selected {
+            transform: scale(1.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 2px solid #a78bfa;
+        }
+        .user-card:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="p-4">
+
+    <div id="user-selection" class="flex flex-col items-center justify-center h-screen space-y-8">
+        <h1 class="text-3xl font-bold text-purple-800">¿Quién está ahí?</h1>
+        <div class="flex space-x-4">
+            <button onclick="selectUser('Maca')" class="user-card flex flex-col items-center">
+                <div class="w-20 h-20 bg-pink-200 rounded-full mb-2 border-4 border-white shadow-lg flex items-center justify-center text-2xl">🌸</div>
+                <span class="font-medium">Maca</span>
+            </button>
+            <button onclick="selectUser('Marco')" class="user-card flex flex-col items-center">
+                <div class="w-20 h-20 bg-blue-200 rounded-full mb-2 border-4 border-white shadow-lg flex items-center justify-center text-2xl">😎</div>
+                <span class="font-medium">Marco</span>
+            </button>
+            <button onclick="selectUser('Vicente')" class="user-card flex flex-col items-center">
+                <div class="w-20 h-20 bg-green-200 rounded-full mb-2 border-4 border-white shadow-lg flex items-center justify-center text-2xl">🎮</div>
+                <span class="font-medium">Vicente</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="app-main" class="hidden space-y-6 pb-20">
+        <header class="flex justify-between items-center py-4">
+            <h2 id="welcome-msg" class="text-xl font-bold">Hola, Maca</h2>
+            <button onclick="location.reload()" class="text-xs bg-white/50 px-3 py-1 rounded-full">Cambiar user</button>
+        </header>
+
+        <section class="glass p-6 space-y-4">
+            <h3 class="font-semibold italic">¿Qué te apetece hoy?</h3>
+            <div id="genre-container" class="flex flex-wrap gap-3">
+                </div>
+            
+            <div class="pt-4">
+                <label class="text-xs uppercase font-bold text-gray-500">Origen</label>
+                <select id="country-filter" class="w-full mt-1 p-3 rounded-xl bg-white/50 border-none outline-none">
+                    <option value="">Cualquier lugar</option>
+                    <option value="US">Hollywood</option>
+                    <option value="ES">España</option>
+                    <option value="KR">Corea</option>
+                    <option value="EU">Europa</option>
+                </select>
+            </div>
+
+            <button onclick="magicPick()" class="w-full py-4 bg-purple-500 text-white rounded-2xl font-bold shadow-lg shadow-purple-200">
+                ✨ Ver Sugerencias ✨
+            </button>
+        </section>
+
+        <div id="results" class="space-y-4"></div>
+    </div>
+
+    <script>
+        let currentUser = "";
+        const genres = [
+            { id: 28, name: "Acción", color: "#fee2e2" },
+            { id: 35, name: "Comedia", color: "#fef3c7" },
+            { id: 18, name: "Drama", color: "#e0e7ff" },
+            { id: 27, name: "Terror", color: "#f3e8ff" },
+            { id: 10749, name: "Romance", color: "#fce7f3" },
+            { id: 878, name: "Sci-Fi", color: "#d1fae5" }
+        ];
+        let selectedGenres = [];
+
+        function selectUser(user) {
+            currentUser = user;
+            document.getElementById('user-selection').classList.add('hidden');
+            document.getElementById('app-main').classList.remove('hidden');
+            document.getElementById('welcome-msg').innerText = `Hola, ${user}`;
+            renderGenres();
+        }
+
+        function renderGenres() {
+            const container = document.getElementById('genre-container');
+            genres.forEach(g => {
+                const btn = document.createElement('div');
+                btn.className = 'genre-bubble px-4 py-2 rounded-full text-sm font-medium';
+                btn.style.backgroundColor = g.color;
+                btn.innerText = g.name;
+                btn.onclick = () => {
+                    if(selectedGenres.includes(g.id)) {
+                        selectedGenres = selectedGenres.filter(id => id !== g.id);
+                        btn.classList.remove('selected');
+                    } else if(selectedGenres.length < 3) {
+                        selectedGenres.push(g.id);
+                        btn.classList.add('selected');
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        async function magicPick() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = "<p class='text-center animate-pulse'>Consultando las estrellas...</p>";
+            
+            // Aquí llamarías a TMDB API usando selectedGenres
+            // Por ahora, simulamos 1 resultado para demo técnica
+            setTimeout(() => {
+                resultsDiv.innerHTML = `
+                    <div class="glass p-4 flex gap-4 animate-render">
+                        <div class="w-24 h-36 bg-gray-200 rounded-lg flex-shrink-0 shadow"></div>
+                        <div class="flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-lg leading-tight">Ejemplo Película</h4>
+                                <p class="text-xs text-gray-500">Director: Christopher Nolan</p>
+                            </div>
+                            <button class="bg-purple-100 text-purple-700 text-xs py-2 px-4 rounded-lg font-bold">Quiero verla ya</button>
+                        </div>
+                    </div>
+                `;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
