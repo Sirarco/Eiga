@@ -3,146 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CineMatch</title>
+    <title>CineMatch Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --mint: #e2f3f5; --lavender: #f3e8ff; --peach: #fff1e6;
-            --text: #4a5568;
-        }
-        body {
-            background: linear-gradient(135deg, var(--mint), var(--lavender));
-            min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: var(--text);
-        }
-        .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 24px;
-        }
-        .genre-bubble {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-        }
-        .genre-bubble.selected {
-            transform: scale(1.1);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            border: 2px solid #a78bfa;
-        }
-        .user-card:active { transform: scale(0.95); }
+        :root { --mint: #e2f3f5; --lavender: #f3e8ff; --peach: #fff1e6; }
+        body { background: linear-gradient(135deg, var(--mint), var(--lavender)); min-height: 100vh; color: #2d3748; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 24px; }
+        .genre-bubble { transition: all 0.3s ease; cursor: pointer; border: 2px solid transparent; }
+        .genre-bubble.selected { transform: scale(1.05); border-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+        .movie-card { animation: fadeIn 0.5s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 pb-10">
 
     <div id="user-selection" class="flex flex-col items-center justify-center h-screen space-y-8">
-        <h1 class="text-3xl font-bold text-purple-800">¿Quién está ahí?</h1>
-        <div class="flex space-x-4">
-            <button onclick="selectUser('Maca')" class="user-card flex flex-col items-center">
-                <div class="w-20 h-20 bg-pink-200 rounded-full mb-2 border-4 border-white shadow-lg flex items-center justify-center text-2xl">🌸</div>
-                <span class="font-medium">Maca</span>
+        <h1 class="text-4xl font-black text-purple-900 tracking-tight">CineMatch</h1>
+        <div class="flex gap-6">
+            <button onclick="selectUser('Maca')" class="flex flex-col items-center">
+                <div class="w-20 h-20 bg-pink-200 rounded-full mb-2 border-4 border-white shadow-xl flex items-center justify-center text-3xl">🌸</div>
+                <span class="font-bold">Maca</span>
             </button>
-            <button onclick="selectUser('Marco')" class="user-card flex flex-col items-center">
-                <div class="w-20 h-20 bg-blue-200 rounded-full mb-2 border-4 border-white shadow-lg flex items-center justify-center text-2xl">😎</div>
-                <span class="font-medium">Marco</span>
+            <button onclick="selectUser('Marco')" class="flex flex-col items-center">
+                <div class="w-20 h-20 bg-blue-200 rounded-full mb-2 border-4 border-white shadow-xl flex items-center justify-center text-3xl">😎</div>
+                <span class="font-bold">Marco</span>
             </button>
-            <button onclick="selectUser('Vicente')" class="user-card flex flex-col items-center">
-                <div class="w-20 h-20 bg-green-200 rounded-full mb-2 border-4 border-white shadow-lg flex items-center justify-center text-2xl">🎮</div>
-                <span class="font-medium">Vicente</span>
+            <button onclick="selectUser('Vicente')" class="flex flex-col items-center">
+                <div class="w-20 h-20 bg-green-200 rounded-full mb-2 border-4 border-white shadow-xl flex items-center justify-center text-3xl">🎮</div>
+                <span class="font-bold">Vicente</span>
             </button>
         </div>
     </div>
 
-    <div id="app-main" class="hidden space-y-6 pb-20">
-        <header class="flex justify-between items-center py-4">
-            <h2 id="welcome-msg" class="text-xl font-bold">Hola, Maca</h2>
-            <button onclick="location.reload()" class="text-xs bg-white/50 px-3 py-1 rounded-full">Cambiar user</button>
-        </header>
+    <div id="app-main" class="hidden max-w-md mx-auto space-y-6">
+        <div class="flex justify-between items-center">
+            <h2 id="welcome" class="text-2xl font-bold text-purple-900"></h2>
+            <button onclick="location.reload()" class="text-xs bg-white/50 px-3 py-1 rounded-full uppercase font-bold">Salir</button>
+        </div>
 
-        <section class="glass p-6 space-y-4">
-            <h3 class="font-semibold italic">¿Qué te apetece hoy?</h3>
-            <div id="genre-container" class="flex flex-wrap gap-3">
-                </div>
+        <section class="glass p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase text-gray-500 mb-4 tracking-widest">¿Qué género buscamos?</h3>
+            <div id="genre-container" class="flex flex-wrap gap-2"></div>
             
-            <div class="pt-4">
-                <label class="text-xs uppercase font-bold text-gray-500">Origen</label>
-                <select id="country-filter" class="w-full mt-1 p-3 rounded-xl bg-white/50 border-none outline-none">
-                    <option value="">Cualquier lugar</option>
-                    <option value="US">Hollywood</option>
+            <div class="mt-6">
+                <label class="text-xs font-bold uppercase text-gray-400">Región</label>
+                <select id="region" class="w-full mt-2 p-3 bg-white/50 rounded-xl border-none outline-none font-medium">
+                    <option value="US">Hollywood (EE.UU)</option>
                     <option value="ES">España</option>
-                    <option value="KR">Corea</option>
-                    <option value="EU">Europa</option>
+                    <option value="FR">Francia</option>
+                    <option value="JP">Japón</option>
+                    <option value="KR">Corea del Sur</option>
                 </select>
             </div>
 
-            <button onclick="magicPick()" class="w-full py-4 bg-purple-500 text-white rounded-2xl font-bold shadow-lg shadow-purple-200">
-                ✨ Ver Sugerencias ✨
+            <button onclick="fetchMovies()" class="w-full mt-8 py-4 bg-purple-600 text-white rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform">
+                ENCONTRAR PELIS
             </button>
         </section>
 
-        <div id="results" class="space-y-4"></div>
+        <div id="movie-results" class="space-y-4"></div>
     </div>
 
     <script>
+        // CONFIGURACIÓN - REEMPLAZAR AQUÍ
+        const TMDB_KEY = '366d109fec623ff7a4227017bfd58f0b';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwCW3SovPKFtX_w_Ou5pYhVq7AEQRHEJdj19Jz4aFlw8eMrB84UVGVgqZoI3OdVHiJ3/exec';
+
         let currentUser = "";
-        const genres = [
-            { id: 28, name: "Acción", color: "#fee2e2" },
-            { id: 35, name: "Comedia", color: "#fef3c7" },
-            { id: 18, name: "Drama", color: "#e0e7ff" },
-            { id: 27, name: "Terror", color: "#f3e8ff" },
-            { id: 10749, name: "Romance", color: "#fce7f3" },
-            { id: 878, name: "Sci-Fi", color: "#d1fae5" }
-        ];
         let selectedGenres = [];
+        const genres = [
+            { id: 28, name: "Acción", color: "#fee2e2" }, { id: 35, name: "Comedia", color: "#fef3c7" },
+            { id: 18, name: "Drama", color: "#e0e7ff" }, { id: 27, name: "Terror", color: "#ddd6fe" },
+            { id: 10749, name: "Romance", color: "#fce7f3" }, { id: 878, name: "Sci-Fi", color: "#d1fae5" }
+        ];
 
         function selectUser(user) {
             currentUser = user;
             document.getElementById('user-selection').classList.add('hidden');
             document.getElementById('app-main').classList.remove('hidden');
-            document.getElementById('welcome-msg').innerText = `Hola, ${user}`;
+            document.getElementById('welcome').innerText = `Hola, ${user} ✨`;
             renderGenres();
         }
 
         function renderGenres() {
             const container = document.getElementById('genre-container');
             genres.forEach(g => {
-                const btn = document.createElement('div');
-                btn.className = 'genre-bubble px-4 py-2 rounded-full text-sm font-medium';
-                btn.style.backgroundColor = g.color;
-                btn.innerText = g.name;
-                btn.onclick = () => {
+                const b = document.createElement('div');
+                b.className = 'genre-bubble px-4 py-2 rounded-full text-xs font-bold';
+                b.style.backgroundColor = g.color;
+                b.innerText = g.name;
+                b.onclick = () => {
                     if(selectedGenres.includes(g.id)) {
-                        selectedGenres = selectedGenres.filter(id => id !== g.id);
-                        btn.classList.remove('selected');
+                        selectedGenres = selectedGenres.filter(i => i !== g.id);
+                        b.classList.remove('selected');
                     } else if(selectedGenres.length < 3) {
                         selectedGenres.push(g.id);
-                        btn.classList.add('selected');
+                        b.classList.add('selected');
                     }
                 };
-                container.appendChild(btn);
+                container.appendChild(b);
             });
         }
 
-        async function magicPick() {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = "<p class='text-center animate-pulse'>Consultando las estrellas...</p>";
+        async function fetchMovies() {
+            const container = document.getElementById('movie-results');
+            container.innerHTML = "<p class='text-center py-10 font-medium text-purple-800 animate-pulse'>Buscando en la base de datos galáctica...</p>";
             
-            // Aquí llamarías a TMDB API usando selectedGenres
-            // Por ahora, simulamos 1 resultado para demo técnica
-            setTimeout(() => {
-                resultsDiv.innerHTML = `
-                    <div class="glass p-4 flex gap-4 animate-render">
-                        <div class="w-24 h-36 bg-gray-200 rounded-lg flex-shrink-0 shadow"></div>
-                        <div class="flex flex-col justify-between">
-                            <div>
-                                <h4 class="font-bold text-lg leading-tight">Ejemplo Película</h4>
-                                <p class="text-xs text-gray-500">Director: Christopher Nolan</p>
+            const genreIds = selectedGenres.join(',');
+            const region = document.getElementById('region').value;
+            
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&with_genres=${genreIds}&with_origin_country=${region}&language=es-ES&sort_by=popularity.desc`);
+                const data = await res.json();
+                
+                container.innerHTML = "";
+                data.results.slice(0, 5).forEach(movie => {
+                    container.innerHTML += `
+                        <div class="glass p-4 movie-card flex gap-4">
+                            <img src="https://image.tmdb.org/t/p/w200${movie.poster_path}" class="w-24 h-36 rounded-xl object-cover shadow-md">
+                            <div class="flex flex-col justify-between flex-1">
+                                <div>
+                                    <h4 class="font-black text-lg leading-tight">${movie.title}</h4>
+                                    <p class="text-[10px] text-gray-500 mt-1 uppercase font-bold">${movie.release_date.split('-')[0]}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="saveMovie('${movie.id}', '${movie.title.replace(/'/g, "")}', 'Mucho')" class="flex-1 bg-purple-100 text-purple-700 text-[10px] py-2 rounded-lg font-black uppercase">Quiero Verla</button>
+                                    <button onclick="alert('Sinopsis: ${movie.overview.substring(0,100)}...')" class="bg-gray-100 p-2 rounded-lg text-xs">ℹ️</button>
+                                </div>
                             </div>
-                            <button class="bg-purple-100 text-purple-700 text-xs py-2 px-4 rounded-lg font-bold">Quiero verla ya</button>
                         </div>
-                    </div>
-                `;
-            }, 1000);
+                    `;
+                });
+            } catch (e) {
+                container.innerHTML = "Error al conectar. Revisa tu API Key.";
+            }
+        }
+
+        async function saveMovie(id, title, priority) {
+            const data = {
+                action: 'saveInteraction',
+                user: currentUser,
+                movie_id: id,
+                title: title,
+                priority: priority,
+                watched: false
+            };
+            
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(data)
+            });
+            
+            alert(`¡Guardado! ${title} se añadió a tu lista en Google Sheets.`);
         }
     </script>
 </body>
