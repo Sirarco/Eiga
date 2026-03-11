@@ -3,19 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eiga 映画 v7.2 Hotfix</title>
+    <title>Eiga 映画 v7.3 Stable</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎦</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --mint: #e2f3f5; --lavender: #f3e8ff; --peach: #fff1e6; }
         body { background: linear-gradient(135deg, var(--mint), var(--lavender)); min-height: 100vh; color: #2d3748; font-family: -apple-system, system-ui, sans-serif; overflow-x: hidden; }
         .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 28px; }
+        .tab-btn { transition: all 0.2s; }
         .tab-btn.active { color: #8b5cf6; border-bottom: 3px solid #8b5cf6; font-weight: 900; }
         .context-btn { transition: 0.3s; filter: grayscale(1); opacity: 0.6; }
         .context-btn.active { filter: grayscale(0); opacity: 1; transform: scale(1.05); font-weight: 900; color: #6d28d9; }
         .animate-up { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .platform-badge { background: white; padding: 2px 6px; border-radius: 8px; font-size: 9px; font-weight: bold; border: 1px solid #eee; display: flex; align-items: center; gap: 4px; }
+        
+        /* FIX DE GÉNEROS: Forzamos la visualización y colores con prioridades altas */
+        .genre-bubble { cursor: pointer; border: 2px solid transparent; transition: 0.2s; user-select: none; }
+        .genre-bubble.selected { transform: scale(1.05); border-color: #8b5cf6 !important; background-color: #8b5cf6 !important; color: white !important; }
     </style>
 </head>
 <body class="p-3 pb-24">
@@ -35,7 +40,7 @@
 
     <div id="app-main" class="hidden max-w-md mx-auto space-y-4">
         
-        <header class="bg-white/60 p-4 rounded-[32px] shadow-sm backdrop-blur-md border border-white/50">
+        <header class="bg-white/60 p-4 rounded-[32px] shadow-sm backdrop-blur-md border border-white/50 relative z-20">
             <div class="flex justify-between items-start mb-4">
                 <div class="flex items-center gap-3">
                     <button onclick="openSettingsModal()" id="main-avatar" class="text-3xl bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg border-2 border-purple-100 relative">
@@ -72,7 +77,7 @@
             <div id="missions-widget" class="mt-2 space-y-1.5 hidden"></div>
         </header>
 
-        <nav class="flex justify-between bg-white/80 rounded-2xl overflow-hidden shadow-sm backdrop-blur-sm border border-white px-1 relative z-10">
+        <nav class="flex justify-between bg-white/80 rounded-2xl overflow-hidden shadow-sm backdrop-blur-sm border border-white px-1 relative z-20">
             <button onclick="showTab('explorar')" id="btn-explorar" class="tab-btn active p-3 font-bold text-[9px] uppercase">🔍 Buscar</button>
             <button onclick="showTab('prioridades')" id="btn-prioridades" class="tab-btn p-3 font-bold text-[9px] uppercase">🔥 Pends</button>
             <button onclick="showTab('historial')" id="btn-historial" class="tab-btn p-3 font-bold text-[9px] uppercase">✅ Vistas</button>
@@ -80,7 +85,7 @@
             <button onclick="showTab('misiones')" id="btn-misiones" class="tab-btn p-3 font-bold text-[9px] uppercase text-orange-600">🏆 Misión</button>
         </nav>
 
-        <section id="tab-explorar" class="tab-content space-y-4 animate-up relative z-0">
+        <section id="tab-explorar" class="tab-content space-y-4 animate-up relative z-10">
             <div class="glass p-5 space-y-4">
                 
                 <div class="flex justify-center mb-2">
@@ -96,8 +101,9 @@
                 </div>
 
                 <div id="search-filter-container" class="space-y-4">
-                    <div id="genre-container" class="flex flex-wrap gap-2 mt-1"></div>
-                    <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div id="genre-container" class="flex flex-wrap gap-2 mt-1 relative z-30"></div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mt-3 relative z-20">
                         <select id="region" class="w-full p-2.5 bg-white/80 rounded-xl text-[10px] font-bold shadow-sm outline-none border border-gray-100">
                             <option value="">🌎 Origen (Todos)</option><option value="CL">🇨🇱 Chile</option><option value="AR|BR|CO|MX|PE|UY|VE">🌮 Latinoamérica</option><option value="US">🇺🇸 USA / Inglés</option><option value="ES|FR|GB|DE|IT|NL|SE">🌍 Europa</option><option value="RU|PL|CZ|HU|RO|UA">❄️ Rusia / Europa Este</option><option value="JP|KR|CN|TW|HK">⛩️ Asia Oriental</option><option value="IN|PK|BD">🪷 India / Sur Asia</option><option value="IR|TR|IL|EG|AE">🐪 Medio Oriente</option>
                         </select>
@@ -117,10 +123,10 @@
             
             <div id="search-title" class="font-black text-purple-900 pl-2 hidden">Resultados:</div>
             
-            <div id="movie-results" class="space-y-3">
+            <div id="movie-results" class="space-y-3 pb-10">
                 <div class="p-10 text-center"><p class="text-4xl mb-2 opacity-50">🧭</p><p class="text-xs font-bold text-gray-400">Selecciona tus filtros y presiona Descubrir.</p></div>
             </div>
-            <button id="btn-load-more" onclick="fetchMedia(true)" class="hidden w-full py-3 bg-white text-purple-600 rounded-xl font-black shadow-sm mt-4 text-xs border border-purple-100 active:scale-95">Cargar más resultados ⬇️</button>
+            <button id="btn-load-more" onclick="fetchMedia(true)" class="hidden w-full py-3 bg-white text-purple-600 rounded-xl font-black shadow-sm mt-4 text-xs border border-purple-100 active:scale-95 mb-10">Cargar más resultados ⬇️</button>
         </section>
 
         <section id="tab-prioridades" class="tab-content hidden animate-up pb-10">
@@ -184,7 +190,7 @@
     <div id="feedback-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm"><div class="bg-white p-6 w-full max-w-sm space-y-4 rounded-3xl animate-up shadow-2xl"><h3 class="font-black text-purple-900 text-lg text-center">¿Qué tal estuvo?</h3><p id="f-movie-title" class="text-[10px] font-bold text-gray-500 text-center uppercase tracking-widest bg-gray-50 py-2 rounded-lg"></p><select id="f-rating" class="w-full p-3 rounded-xl bg-purple-50 font-bold border-none text-sm text-gray-800 outline-none"><option value="😍 Obra Maestra">😍 Obra Maestra</option><option value="😊 Muy buena">😊 Muy buena</option><option value="😐 Pasable">😐 Pasable</option><option value="💩 Mala">💩 Mala</option></select><textarea id="f-comment" placeholder="Escribe tu opinión o comentario..." class="w-full p-3 rounded-xl bg-purple-50 text-sm h-20 border-none outline-none"></textarea><div class="flex gap-2"><button onclick="closeFeedbackModal()" class="py-3 px-4 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs">Cancelar</button><button onclick="submitFeedback()" class="flex-1 py-3 bg-green-500 text-white rounded-xl font-black shadow-lg shadow-green-200 text-xs">GUARDAR ✅</button></div></div></div>
 
     <script>
-        // === CONFIGURACIÓN ===
+        // === CONFIGURACIÓN Y CREDENCIALES ===
         const TMDB_KEY = '366d109fec623ff7a4227017bfd58f0b'; 
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwCW3SovPKFtX_w_Ou5pYhVq7AEQRHEJdj19Jz4aFlw8eMrB84UVGVgqZoI3OdVHiJ3/exec'; 
 
@@ -198,9 +204,8 @@
         let currentMovieData = null; 
         let activeMovieIdForFeedback = null;
         let searchPage = 1;
-        let currentSearchMode = 'filters'; // Por defecto: Descubrir
+        let currentSearchMode = 'filters'; 
 
-        // DICCIONARIOS INTELIGENTES (Cine, TV y Libros)
         const GENRE_MAP = { 28:"Acción", 35:"Comedia", 18:"Drama", 27:"Terror", 10749:"Romance", 878:"Sci-Fi", 53:"Thriller", 16:"Animación", 99:"Documental", 10759:"Acción/Aventura", 10765:"Sci-Fi/Fantasía", 80:"Crimen", 9648:"Misterio", 10768:"Política" };
         const BOOK_GENRES = { "Fiction":"Novela/Ficción", "Philosophy":"Filosofía", "Political+Science":"Política", "Science":"Ciencia", "History":"Historia", "Biography":"Biografía", "Business":"Negocios", "Self-Help":"Autoayuda" };
         const BOOK_REGION_MAP = { "CL":"Chilean", "AR|BR|CO|MX|PE|UY|VE":"Latin American", "US":"United States", "ES|FR|GB|DE|IT|NL|SE":"Europe", "RU|PL|CZ|HU|RO|UA":"Russian", "JP|KR|CN|TW|HK":"Asian", "IN|PK|BD":"Indian", "IR|TR|IL|EG|AE":"Middle East" };
@@ -211,20 +216,64 @@
             { id: 'm3', name: 'Pasado Clásico', desc: 'Ve 2 del siglo 20.', target: 2, field: 'año', cond: '<', val: '2000' }
         ];
 
-        // --- TELEMETRÍA LOCAL ---
+        // --- MAGIA 1: MAPEADOR AGNÓSTICO DE ENCABEZADOS (Legacy Data Fix) ---
+        function getSafeMedia(raw) {
+            let val = raw ? String(raw).trim().toLowerCase() : "";
+            return val === "" ? "movie" : val; // Transforma espacios/nulos a "movie"
+        }
+
+        function normalizeRow(h) {
+            return {
+                id: h.id_tmdb || h.movie_id,
+                title: h.titulo || h.title || "Desconocido",
+                original_title: h.titulo_original || h.original_title || "",
+                poster: h.poster || "",
+                director: h.director || h.autor || "",
+                year: h.año || h.year || "",
+                countries: h.paises || h.countries || "🌍",
+                genres: h.generos || h.genres || "",
+                media_type: getSafeMedia(h.tipo_media || h.media_type), // El Seguro Anti-Basura
+                duration: h.duracion || h.duration || "",
+                seasons: h.temporadas || h.seasons || "",
+                status: h.estado || h.status || "",
+                watched: String(h.vista_completa !== undefined ? h.vista_completa : h.watched).toUpperCase() === "TRUE" || (h.vista_completa === true || h.watched === true),
+                priority: h.prioridad || h.priority || "",
+                rating: h.calificacion || h.rating || "",
+                comment: h.comentario || h.comment || "",
+                user: h.usuario || h.user || ""
+            };
+        }
+
+        function getLatestStates() {
+            const my = globalHistory.filter(h => (h.usuario || h.user) === currentUser);
+            const latest = new Map();
+            my.forEach(h => {
+                const norm = normalizeRow(h);
+                latest.set(norm.id, norm);
+            });
+            return Array.from(latest.values());
+        }
+        
+        function getLatestStatesAllUsers() {
+            const latest = new Map();
+            globalHistory.forEach(h => {
+                const norm = normalizeRow(h);
+                latest.set(`${norm.user}_${norm.id}`, norm);
+            });
+            return Array.from(latest.values());
+        }
+
+        // --- TELEMETRÍA ---
         function trackAPI(type) {
             let month = new Date().getMonth();
             if (localStorage.getItem('eiga_api_month') != month) { localStorage.setItem('eiga_api_month', month); localStorage.setItem('eiga_api_m', 0); localStorage.setItem('eiga_api_b', 0); }
-            let key = type === 'book' ? 'eiga_api_b' : 'eiga_api_m';
-            let count = parseInt(localStorage.getItem(key) || '0') + 1;
-            localStorage.setItem(key, count);
-            document.getElementById(type === 'book' ? 'api-b' : 'api-m').innerText = count;
+            let key = type === 'book' ? 'eiga_api_b' : 'eiga_api_m'; let count = parseInt(localStorage.getItem(key) || '0') + 1;
+            localStorage.setItem(key, count); document.getElementById(type === 'book' ? 'api-b' : 'api-m').innerText = count;
         }
         function loadAPITracker() {
             let month = new Date().getMonth();
             if (localStorage.getItem('eiga_api_month') != month) { localStorage.setItem('eiga_api_month', month); localStorage.setItem('eiga_api_m', 0); localStorage.setItem('eiga_api_b', 0); }
-            document.getElementById('api-m').innerText = localStorage.getItem('eiga_api_m') || '0';
-            document.getElementById('api-b').innerText = localStorage.getItem('eiga_api_b') || '0';
+            document.getElementById('api-m').innerText = localStorage.getItem('eiga_api_m') || '0'; document.getElementById('api-b').innerText = localStorage.getItem('eiga_api_b') || '0';
         }
 
         window.onload = async () => {
@@ -246,7 +295,7 @@
             setContext('movie'); await loadData();
         }
 
-        // --- MANEJO DE CONTEXTOS Y RESET INTELIGENTE ---
+        // --- MAGIA 2: AUTO-ROUTING Y RESET DE CONTEXTO ---
         function setContext(ctx) {
             currentContext = ctx;
             document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('active'));
@@ -256,7 +305,7 @@
             document.getElementById('pending-title').innerText = `Mis ${labels[ctx]} 📝`;
             document.getElementById('history-title').innerText = `${labels[ctx]} Vistas 🍿`;
             
-            // RESET INTELIGENTE DE FILTROS AL CAMBIAR PESTAÑA
+            // RESET INTELIGENTE
             document.getElementById('search-input').value = "";
             document.getElementById('region').value = "";
             document.getElementById('duration').value = "400";
@@ -266,28 +315,32 @@
             if(ctx === 'book') { document.getElementById('duration').style.display = 'none'; } 
             else { document.getElementById('duration').style.display = 'block'; }
 
-            // SIEMPRE FUERZA A EMPEZAR EN FILTROS
-            setSearchMode('filters');
+            setSearchMode('filters'); // Fuerzo modo Filtros
             renderGenres(); renderWatchlist(); renderHistoryTab();
             
-            // ESTADO CERO: Evita consultas auto
             document.getElementById('movie-results').innerHTML = `<div class="p-10 text-center"><p class="text-4xl mb-2 opacity-50">🧭</p><p class="text-xs font-bold text-gray-400">Presiona Buscar o Descubrir para explorar ${labels[ctx]}</p></div>`;
             document.getElementById('btn-load-more').classList.add('hidden');
+            
+            // AUTO-ROUTING: Manda al usuario a la pantalla de buscar
+            showTab('explorar');
         }
 
+        // --- MAGIA 3: CLICK EN GÉNEROS DESBLOQUEADO (Aseguramos ID como string) ---
         function renderGenres() {
             const container = document.getElementById('genre-container'); container.innerHTML = ""; selectedGenres = [];
             if(currentContext === 'book') {
                 Object.entries(BOOK_GENRES).forEach(([id, name]) => {
+                    const strId = String(id);
                     const b = document.createElement('div'); b.className = 'genre-bubble px-3 py-1.5 text-[10px] font-black uppercase rounded-lg text-gray-600 bg-white/80 shadow-sm border border-gray-100'; b.innerText = name;
-                    b.onclick = () => { if(selectedGenres.includes(id)) { selectedGenres = selectedGenres.filter(i=>i!==id); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(id); b.classList.add('selected'); } };
+                    b.onclick = () => { if(selectedGenres.includes(strId)) { selectedGenres = selectedGenres.filter(i=>i!==strId); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(strId); b.classList.add('selected'); } };
                     container.appendChild(b);
                 });
             } else {
                 const list = currentContext === 'movie' ? [28,35,18,27,10749,878,53,16,99] : [10759,35,18,10765,80,9648,16,99,10768];
                 list.forEach(id => {
+                    const strId = String(id);
                     const b = document.createElement('div'); b.className = 'genre-bubble px-3 py-1.5 text-[10px] font-black uppercase rounded-lg text-gray-600 bg-white/80 shadow-sm border border-gray-100'; b.innerText = GENRE_MAP[id] || "Género";
-                    b.onclick = () => { if(selectedGenres.includes(id)) { selectedGenres = selectedGenres.filter(i=>i!==id); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(id); b.classList.add('selected'); } };
+                    b.onclick = () => { if(selectedGenres.includes(strId)) { selectedGenres = selectedGenres.filter(i=>i!==strId); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(strId); b.classList.add('selected'); } };
                     container.appendChild(b);
                 });
             }
@@ -306,27 +359,24 @@
         }
         function getTodayDate() { return new Date().toISOString().split('T')[0]; }
 
-        // --- SÚPER BUSCADOR REPARADO ---
+        // --- BUSCADOR ESTABILIZADO ---
         async function fetchMedia(isLoadMore = false) {
             const container = document.getElementById('movie-results'); const btnMore = document.getElementById('btn-load-more');
             document.getElementById('search-title').classList.remove('hidden');
             
-            // VALIDACIÓN ESTRICTA DE TEXTO (Aislada solo para modo texto)
             let textQuery = "";
             if (currentSearchMode === 'text') {
                 textQuery = document.getElementById('search-input').value.trim(); 
-                if(!textQuery) { container.innerHTML = "<p class='text-xs text-red-500 text-center font-bold'>Debes escribir algo para buscar.</p>"; return; }
+                if(!textQuery) { container.innerHTML = "<p class='text-xs text-red-500 text-center font-bold mt-4'>Debes escribir algo para buscar.</p>"; return; }
             }
 
             if(!isLoadMore) { searchPage = 1; container.innerHTML = "<p class='text-center p-6 text-xs font-bold text-purple-400 animate-pulse'>Explorando...</p>"; btnMore.classList.add('hidden'); } 
             else { searchPage++; btnMore.innerText = "Cargando..."; }
 
-            // RAMA LITERATURA
             if(currentContext === 'book') {
                 trackAPI('book');
                 const startIndex = (searchPage - 1) * 40; 
                 let queryStr = "";
-
                 if (currentSearchMode === 'text') { queryStr = encodeURIComponent(textQuery); } 
                 else {
                     const genreIds = selectedGenres.join('+subject:');
@@ -344,10 +394,8 @@
                     if(!isLoadMore) container.innerHTML = "";
                     let items = data.items || [];
                     
-                    // POST-PROCESADOR LOCAL
                     if (currentSearchMode === 'filters') {
-                        const decade = document.getElementById('decade').value;
-                        const stars = document.getElementById('stars-filter').value;
+                        const decade = document.getElementById('decade').value; const stars = document.getElementById('stars-filter').value;
                         if (decade) {
                             items = items.filter(b => {
                                 let y = parseInt((b.volumeInfo.publishedDate || "0").split('-')[0]);
@@ -364,7 +412,7 @@
                         }
                     }
 
-                    if(items.length === 0) { if(!isLoadMore) container.innerHTML = "<p class='text-xs text-gray-500 text-center font-bold'>No hay resultados exactos.</p>"; btnMore.classList.add('hidden'); return; }
+                    if(items.length === 0) { if(!isLoadMore) container.innerHTML = "<p class='text-xs text-gray-500 text-center font-bold'>No hay resultados. Intenta otros filtros.</p>"; btnMore.classList.add('hidden'); return; }
 
                     items.slice(0, 20).forEach(b => {
                         const info = b.volumeInfo;
@@ -383,19 +431,18 @@
                             </div>`;
                     });
                     if(data.items && data.items.length === 40) btnMore.classList.remove('hidden'); else btnMore.classList.add('hidden');
-                } catch(e) { container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error API Books.</p>"; }
+                } catch(e) { container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error en Google Books.</p>"; }
                 return;
             }
 
-            // RAMA CINE/TV/ANIME (TMDB)
+            // TMDB
             trackAPI('tmdb');
             let type = currentContext === 'movie' ? 'movie' : 'tv';
             let url = ""; const today = getTodayDate();
 
             if(currentSearchMode === 'text') {
                 url = `https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_KEY}&language=es-ES&query=${encodeURIComponent(textQuery)}&page=${searchPage}`;
-                let dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date';
-                url += `&${dateField}.lte=${today}`;
+                let dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date'; url += `&${dateField}.lte=${today}`;
             } else {
                 const genreIds = selectedGenres.join(','); const region = document.getElementById('region').value;
                 const decade = document.getElementById('decade').value; const stars = document.getElementById('stars-filter').value;
@@ -445,7 +492,51 @@
             } catch(e) { if(!isLoadMore) container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error TMDB.</p>"; }
         }
 
-        // --- DETALLE Y MODALES ---
+        // --- RENDERS DE LISTAS LOCALES (USANDO DATOS NORMALIZADOS) ---
+        function renderWatchlist() {
+            const container = document.getElementById('prioridades-list'); 
+            let ctxType = currentContext === 'anime' ? 'tv' : currentContext; 
+            
+            // Usamos las variables normalizadas: p.watched, p.media_type
+            let pending = getLatestStates().filter(p => !p.watched && p.media_type === ctxType).reverse();
+            if(document.getElementById('sort-pending')?.value === 'priority') pending.sort((a,b) => scorePriority(b.priority) - scorePriority(a.priority));
+            
+            container.innerHTML = "";
+            if(pending.length===0) { container.innerHTML="<div class='glass p-6 text-center mt-2'><p class='text-xs text-purple-800 font-bold'>Lista limpia.</p></div>"; return; }
+            pending.forEach(p => {
+                const posterUrl = p.poster.startsWith('http') ? p.poster : `https://image.tmdb.org/t/p/w200${p.poster}`;
+                let rSub = "";
+                if(p.media_type === 'movie') rSub = `${p.director || '?'} • ${p.countries || '🌍'} • ${p.duration?p.duration+'m':p.year}`;
+                else if(p.media_type === 'tv' || p.media_type === 'anime') rSub = `${p.seasons?p.seasons+' Temp. • ':''}${p.status==='Returning Series'?'🟢 Emisión':'🔴 Terminada'}`;
+                else if(p.media_type === 'book') rSub = `✒️ ${p.director} • 📚 ${p.duration||'?'} págs`;
+
+                container.innerHTML += `<div onclick="openMovieDetail('${p.id}', 'pending')" class="bg-white p-3 rounded-2xl flex gap-3 items-center shadow-sm border border-purple-50 cursor-pointer active:scale-[0.98]"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 pr-1"><p class="font-black text-[13px] text-gray-800 leading-tight">${p.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600">${p.priority}</span></div><button onclick="event.stopPropagation(); openFeedbackModal('${p.id}', '${p.title.replace(/'/g,"")}')" class="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm active:scale-90 z-40">Calificar ✏️</button></div>`;
+            });
+        }
+
+        function renderHistoryTab() {
+            const container = document.getElementById('historial-list'); 
+            let ctxType = currentContext === 'anime' ? 'tv' : currentContext;
+            
+            // Usamos las variables normalizadas
+            let views = getLatestStates().filter(h => h.watched && h.media_type === ctxType).reverse();
+            if(document.getElementById('sort-history')?.value === 'best') views.sort((a,b) => scoreRating(b.rating) - scoreRating(a.rating));
+            else if(document.getElementById('sort-history')?.value === 'worst') views.sort((a,b) => scoreRating(a.rating) - scoreRating(b.rating));
+
+            container.innerHTML = "";
+            if(views.length===0) { container.innerHTML="<div class='bg-white/50 p-6 text-center rounded-2xl'><p class='text-xs text-gray-500 font-bold'>Aún no hay reseñas.</p></div>"; return; }
+            views.forEach(h => {
+                const posterUrl = h.poster.startsWith('http') ? h.poster : `https://image.tmdb.org/t/p/w200${h.poster}`;
+                let rSub = "";
+                if(h.media_type === 'movie') rSub = `${h.countries || '🌍'} • ${h.duration?h.duration+'m':h.year}`;
+                else if(h.media_type === 'tv' || h.media_type === 'anime') rSub = `${h.seasons?h.seasons+'T • ':''}${h.status==='Returning Series'?'🟢':'🔴'} • ${h.year}`;
+                else if(h.media_type === 'book') rSub = `✒️ ${h.director} • ${h.year}`;
+
+                container.innerHTML += `<div onclick="openMovieDetail('${h.id}', 'history')" class="bg-white p-3 rounded-2xl text-xs shadow-sm flex gap-3 border border-purple-50 cursor-pointer active:scale-95"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 flex flex-col justify-center"><p class="font-black text-[13px] text-gray-800 leading-tight">${h.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="text-[9px] font-black text-gray-800 bg-gray-100 px-2 py-0.5 rounded mt-1.5 inline-block w-max shadow-sm">${h.rating} ${h.comment?'💬':''}</span></div></div>`;
+            });
+        }
+
+        // --- DETALLE HÍBRIDO ---
         function checkFav(id) { return globalFavorites.some(f => f.user === currentUser && String(f.id) === String(id)); }
         async function toggleFav(type, id, name) {
             event.stopPropagation(); const isFav = checkFav(id);
@@ -465,8 +556,9 @@
 
             let type = currentContext;
             if(context === 'pending' || context === 'history') {
-                const row = globalHistory.find(h => String(h.id_tmdb) === String(movieId));
-                if(row && getSafeMedia(row.tipo_media)) type = getSafeMedia(row.tipo_media) === 'anime' ? 'tv' : getSafeMedia(row.tipo_media);
+                const states = getLatestStates();
+                const row = states.find(h => String(h.id) === String(movieId));
+                if(row && row.media_type) type = row.media_type === 'anime' ? 'tv' : row.media_type;
             } else { type = type === 'anime' ? 'tv' : type; }
 
             if(type === 'book') {
@@ -502,7 +594,6 @@
                 const directorObj = type === 'movie' ? det.credits?.crew?.find(c => c.job === 'Director') : (det.created_by && det.created_by.length > 0 ? det.created_by[0] : null); 
                 const castObjs = det.credits?.cast?.slice(0, 5); 
                 const year = (det.release_date || det.first_air_date || 'N/A').split('-')[0];
-                const pList = det.production_countries?.map(p => p.name).join(', ') || '🌍';
                 const isoCountry = det.production_countries?.[0]?.iso_3166_1 || '🌍';
                 
                 document.getElementById('detail-header-bg').style.backgroundImage = `url(https://image.tmdb.org/t/p/w500${det.backdrop_path || det.poster_path})`;
@@ -555,56 +646,10 @@
                 let txt1 = currentContext === 'book' ? "👁️ Calificar Lectura" : "👁️ Calificar Vista";
                 actionsDiv.innerHTML = `<button onclick="openFeedbackModal('${id}', '${currentMovieData.title}')" class="w-full py-3 bg-white text-gray-800 rounded-xl font-black shadow-lg border border-gray-200 active:scale-95 text-xs mb-2">${txt1}</button><button onclick="changeInteractionState('Ninguna', 'DESCARTADA')" class="w-full py-2 bg-gray-100 text-red-500 rounded-xl font-bold border border-red-100 active:scale-95 text-[10px] uppercase">🗑️ Ya no me interesa</button>`;
             } else if (context === 'history') {
-                const row = globalHistory.find(h => String(h.id_tmdb) === String(id) && h.usuario === currentUser && isWatched(h.vista_completa));
-                actionsDiv.innerHTML = `<div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-200 shadow-inner mt-4"><p class="text-[9px] font-black uppercase text-yellow-600 mb-1 tracking-widest">Tu Reseña</p><p class="font-black text-lg text-gray-800">${row?.calificacion || ''}</p>${row?.comentario ? `<p class="italic text-gray-600 text-xs mt-2 bg-white/50 p-2 rounded">💬 "${row.comentario}"</p>` : ''}</div>`;
+                const states = getLatestStates();
+                const row = states.find(h => String(h.id) === String(id) && h.watched);
+                actionsDiv.innerHTML = `<div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-200 shadow-inner mt-4"><p class="text-[9px] font-black uppercase text-yellow-600 mb-1 tracking-widest">Tu Reseña</p><p class="font-black text-lg text-gray-800">${row?.rating || ''}</p>${row?.comment ? `<p class="italic text-gray-600 text-xs mt-2 bg-white/50 p-2 rounded">💬 "${row.comment}"</p>` : ''}</div>`;
             }
-        }
-
-        // --- VALIDADOR ANTI-BASURA (Legacy Data) ---
-        function getSafeMedia(raw) {
-            let val = raw ? raw.toString().trim() : "";
-            return val === "" ? "movie" : val; // Si está vacío o es un espacio, es 'movie'
-        }
-
-        function closeDetailModal() { document.getElementById('movie-detail-modal').classList.add('hidden'); }
-        function getLatestStates() { const my = globalHistory.filter(h => h.usuario === currentUser); const latest = new Map(); my.forEach(h => latest.set(h.id_tmdb, h)); return Array.from(latest.values()); }
-        function isWatched(val) { return String(val).toUpperCase() === "TRUE" || val === true; }
-
-        function renderWatchlist() {
-            const container = document.getElementById('prioridades-list'); 
-            let pending = getLatestStates().filter(s => !isWatched(s.vista_completa) && getSafeMedia(s.tipo_media) === currentContext).reverse();
-            if(document.getElementById('sort-pending')?.value === 'priority') pending.sort((a,b) => scorePriority(b.prioridad) - scorePriority(a.prioridad));
-            
-            container.innerHTML = "";
-            if(pending.length===0) { container.innerHTML="<div class='glass p-6 text-center mt-2'><p class='text-xs text-purple-800 font-bold'>Lista limpia.</p></div>"; return; }
-            pending.forEach(p => {
-                const posterUrl = p.poster.startsWith('http') ? p.poster : `https://image.tmdb.org/t/p/w200${p.poster}`;
-                let rSub = "";
-                if(getSafeMedia(p.tipo_media) === 'movie') rSub = `${p.director || '?'} • ${p.paises || '🌍'} • ${p.duracion?p.duracion+'m':p.año}`;
-                else if(getSafeMedia(p.tipo_media) === 'tv' || getSafeMedia(p.tipo_media) === 'anime') rSub = `${p.temporadas?p.temporadas+' Temp. • ':''}${p.estado==='Returning Series'?'🟢 Emisión':'🔴 Terminada'}`;
-                else if(getSafeMedia(p.tipo_media) === 'book') rSub = `✒️ ${p.director} • 📚 ${p.duracion||'?'} págs`;
-
-                container.innerHTML += `<div onclick="openMovieDetail('${p.id_tmdb}', 'pending')" class="bg-white p-3 rounded-2xl flex gap-3 items-center shadow-sm border border-purple-50 cursor-pointer active:scale-[0.98]"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 pr-1"><p class="font-black text-[13px] text-gray-800 leading-tight">${p.titulo}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600">${p.prioridad}</span></div><button onclick="event.stopPropagation(); openFeedbackModal('${p.id_tmdb}', '${p.titulo.replace(/'/g,"")}')" class="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm active:scale-90 z-40">Calificar ✏️</button></div>`;
-            });
-        }
-
-        function renderHistoryTab() {
-            const container = document.getElementById('historial-list'); 
-            let views = getLatestStates().filter(s => isWatched(s.vista_completa) && getSafeMedia(s.tipo_media) === currentContext).reverse();
-            if(document.getElementById('sort-history')?.value === 'best') views.sort((a,b) => scoreRating(b.calificacion) - scoreRating(a.calificacion));
-            else if(document.getElementById('sort-history')?.value === 'worst') views.sort((a,b) => scoreRating(a.calificacion) - scoreRating(b.calificacion));
-
-            container.innerHTML = "";
-            if(views.length===0) { container.innerHTML="<div class='bg-white/50 p-6 text-center rounded-2xl'><p class='text-xs text-gray-500 font-bold'>Aún no hay reseñas.</p></div>"; return; }
-            views.forEach(h => {
-                const posterUrl = h.poster.startsWith('http') ? h.poster : `https://image.tmdb.org/t/p/w200${h.poster}`;
-                let rSub = "";
-                if(getSafeMedia(h.tipo_media) === 'movie') rSub = `${h.paises || '🌍'} • ${h.duracion?h.duracion+'m':h.año}`;
-                else if(getSafeMedia(h.tipo_media) === 'tv' || getSafeMedia(h.tipo_media) === 'anime') rSub = `${h.temporadas?h.temporadas+'T • ':''}${h.estado==='Returning Series'?'🟢':'🔴'} • ${h.año}`;
-                else if(getSafeMedia(h.tipo_media) === 'book') rSub = `✒️ ${h.director} • ${h.año}`;
-
-                container.innerHTML += `<div onclick="openMovieDetail('${h.id_tmdb}', 'history')" class="bg-white p-3 rounded-2xl text-xs shadow-sm flex gap-3 border border-purple-50 cursor-pointer active:scale-95"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 flex flex-col justify-center"><p class="font-black text-[13px] text-gray-800 leading-tight">${h.titulo}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="text-[9px] font-black text-gray-800 bg-gray-100 px-2 py-0.5 rounded mt-1.5 inline-block w-max shadow-sm">${h.calificacion} ${h.comentario?'💬':''}</span></div></div>`;
-            });
         }
 
         async function changeInteractionState(priority, watchedState) {
@@ -626,22 +671,23 @@
         function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
         function openMatchmakerModal() { document.getElementById('matchmaker-modal').classList.remove('hidden'); }
         function closeMatchmaker() { document.getElementById('matchmaker-modal').classList.add('hidden'); }
-        function scorePriority(p) { if(!p) return 1; if(p.includes('Urgente')||p.includes('Ya')) return 3; if(p.includes('Pronto')) return 2; return 1; }
+        function scorePriority(p) { if(!p) return 1; if(p.includes('Urgente')||p.includes('Ya')||p.includes('Prioridad')) return 3; if(p.includes('Pronto')) return 2; return 1; }
         function scoreRating(r) { if(!r) return 0; if(r.includes('Obra')) return 4; if(r.includes('Muy')) return 3; if(r.includes('Pasable')) return 2; return 1; }
         function openFeedbackModal(id, title) { event.stopPropagation(); closeDetailModal(); activeMovieIdForFeedback = id; document.getElementById('f-movie-title').innerText = title; document.getElementById('feedback-modal').classList.remove('hidden'); }
         function closeFeedbackModal() { document.getElementById('feedback-modal').classList.add('hidden'); }
         
         async function submitFeedback() {
             const btn = event.target; btn.innerText = "⏳..."; btn.disabled = true;
-            let ex = globalHistory.find(h => String(h.id_tmdb) === String(activeMovieIdForFeedback) && h.usuario === currentUser);
+            let states = getLatestStates();
+            let ex = states.find(h => String(h.id) === String(activeMovieIdForFeedback));
             
             const payload = {
                 action: 'saveInteraction', user: currentUser, movie_id: activeMovieIdForFeedback, title: document.getElementById('f-movie-title').innerText, 
-                original_title: currentMovieData?.original_title || ex?.titulo_original || "", poster: currentMovieData?.poster || ex?.poster || "",
-                director: currentMovieData?.director || ex?.director || "", year: currentMovieData?.year || ex?.año || "",
-                countries: currentMovieData?.countries || ex?.paises || "", genres: currentMovieData?.genres || ex?.generos || "", 
-                media_type: currentMovieData?.media_type || ex?.tipo_media || currentContext, 
-                duracion: currentMovieData?.duracion || ex?.duracion || "", temporadas: currentMovieData?.temporadas || ex?.temporadas || "", estado: currentMovieData?.estado || ex?.estado || "",
+                original_title: currentMovieData?.original_title || ex?.original_title || "", poster: currentMovieData?.poster || ex?.poster || "",
+                director: currentMovieData?.director || ex?.director || "", year: currentMovieData?.year || ex?.year || "",
+                countries: currentMovieData?.countries || ex?.countries || "", genres: currentMovieData?.genres || ex?.genres || "", 
+                media_type: currentMovieData?.media_type || ex?.media_type || currentContext, 
+                duracion: currentMovieData?.duracion || ex?.duration || "", temporadas: currentMovieData?.temporadas || ex?.seasons || "", estado: currentMovieData?.estado || ex?.status || "",
                 watched: "TRUE", rating: document.getElementById('f-rating').value, comment: document.getElementById('f-comment').value
             };
             
