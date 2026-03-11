@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eiga 映画 v7.6 Connection Monitor</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; style-src * 'unsafe-inline';">
+    <title>Eiga 映画 v7.7 The Missing Links</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎦</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -201,7 +202,7 @@
         let activeMovieIdForFeedback = null;
         let searchPage = 1;
         let currentSearchMode = 'filters'; 
-        let dbStatus = 'wait'; // Monitor Global de DB (wait, online, error)
+        let dbStatus = 'wait'; 
 
         const GENRE_MAP = { 28:"Acción", 35:"Comedia", 18:"Drama", 27:"Terror", 10749:"Romance", 878:"Sci-Fi", 53:"Thriller", 16:"Animación", 99:"Documental", 10759:"Acción/Aventura", 10765:"Sci-Fi/Fantasía", 80:"Crimen", 9648:"Misterio", 10768:"Política" };
         const BOOK_GENRES = { "Fiction":"Novela/Ficción", "Philosophy":"Filosofía", "Political+Science":"Política", "Science":"Ciencia", "History":"Historia", "Biography":"Biografía", "Business":"Negocios", "Self-Help":"Autoayuda" };
@@ -209,7 +210,7 @@
 
         const LOCAL_MISSIONS = [ { id: 'm1', name: 'Cinéfilo Novato', desc: 'Ve 1 obra.', target: 1, field: 'total', cond: 'count', val: '' }, { id: 'm2', name: 'Crítico Exigente', desc: 'Pon 2 "Obra Maestra".', target: 2, field: 'calificacion', cond: 'includes', val: 'Obra Maestra' }, { id: 'm3', name: 'Pasado Clásico', desc: 'Ve 2 del siglo 20.', target: 2, field: 'año', cond: '<', val: '2000' } ];
 
-        // --- SISTEMA DE MONITOREO DE RED (UI) ---
+        // --- SISTEMA DE MONITOREO DE RED ---
         function updateDBStatus(status) {
             dbStatus = status;
             const badge = document.getElementById('db-status');
@@ -226,13 +227,11 @@
             }
         }
 
-        // --- EL CORAZÓN RESTAURADO: FECTH DATA ---
+        // --- FETCH DATA (CON BLINDAJE ANTI-CRASH) ---
         async function loadData() {
             updateDBStatus('wait');
-            renderWatchlist(); renderHistoryTab(); renderFavoritesTab(); renderMissions();
             
             try {
-                // LLAMADA SIMULTÁNEA A GOOGLE SHEETS
                 const [hRes, fRes, mRes] = await Promise.all([ 
                     fetch(`${GAS_URL}?action=getHistory`), 
                     fetch(`${GAS_URL}?action=getFavorites`), 
@@ -253,11 +252,12 @@
             } catch(e) { 
                 console.error("Error crítico sincronizando base de datos:", e); 
                 updateDBStatus('error');
+                // Renderizamos las vistas en su estado de ERROR
                 renderWatchlist(); renderHistoryTab(); renderFavoritesTab(); renderMissions();
             }
         }
 
-        // --- SÚPER NORMALIZADOR (LEGACY DATA) ---
+        // --- SÚPER NORMALIZADOR ---
         function getSafeMedia(raw) {
             let val = raw ? String(raw).trim().toLowerCase() : "";
             return (val === "" || val === "null" || val === "undefined") ? "movie" : val;
@@ -296,12 +296,6 @@
             const my = globalHistory.filter(h => String(h.usuario || h.user || "").trim() === currentUserClean);
             const latest = new Map();
             my.forEach(h => { const norm = normalizeRow(h); latest.set(norm.id, norm); });
-            return Array.from(latest.values());
-        }
-        
-        function getLatestStatesAllUsers() {
-            const latest = new Map();
-            globalHistory.forEach(h => { const norm = normalizeRow(h); latest.set(`${norm.user}_${norm.id}`, norm); });
             return Array.from(latest.values());
         }
 
@@ -343,8 +337,8 @@
         async function selectUser(user, emoji) {
             currentUser = user; document.getElementById('user-selection').classList.add('hidden'); document.getElementById('app-main').classList.remove('hidden'); document.getElementById('welcome').innerText = user;
             document.getElementById('main-avatar').innerHTML = `${emoji} <span class="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center shadow">⚙️</span>`;
-            setContext('movie'); // Llama a los renderers con estado "wait"
-            await loadData();    // Inicia la descarga profunda
+            setContext('movie'); 
+            await loadData();    
         }
 
         function setContext(ctx) {
@@ -483,24 +477,161 @@
             } catch(e) { if(!isLoadMore) container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error TMDB.</p>"; }
         }
 
-        // --- FAVORITOS Y DETALLE ---
-        function checkFav(id) { return globalFavorites.some(f => f.user === currentUser && String(f.id) === String(id)); }
-        async function toggleFav(type, id, name) {
-            event.stopPropagation(); const isFav = checkFav(id);
-            const safeId = String(id).replace(/[^a-zA-Z0-9]/g, '_');
-            const icon = document.getElementById(`fav-icon-${safeId}`); if(icon) icon.innerText = isFav ? "☆" : "⭐";
-            if(isFav) globalFavorites = globalFavorites.filter(f => !(f.user === currentUser && String(f.id) === String(id)));
-            else globalFavorites.push({user: currentUser, tipo: type, id: String(id), nombre: name});
+        // --- MÓDULO RESTAURADO: FAVORITOS ---
+        function renderFavoritesTab() {
+            const container = document.getElementById('fav-list');
+            if (!container) return;
+            
+            if (dbStatus === 'error') { container.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl col-span-3 mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a Favoritos</p></div>`; return; }
+
+            const myFavs = globalFavorites.filter(f => String(f.user || f.usuario || "").trim() === currentUser.trim());
+            container.innerHTML = "";
+            
+            if (myFavs.length === 0) {
+                container.innerHTML = "<p class='text-xs text-gray-500 font-bold col-span-3 text-center p-4 bg-white/50 rounded-2xl'>Aún no hay favoritos.</p>";
+                return;
+            }
+            
+            myFavs.forEach(f => {
+                const tipo = f.tipo || f.Tipo || "Desconocido";
+                const icon = tipo === 'Director' ? '🎬' : (tipo === 'Autor' ? '✒️' : '🎭');
+                container.innerHTML += `<div onclick="openFavDetail('${tipo}', '${f.id || f.id_persona || f.ID_Persona}', '${f.nombre || f.Nombre}')" class="bg-white p-2 rounded-xl text-center shadow-sm border border-purple-50 cursor-pointer active:scale-95 hover:bg-gray-50"><p class="text-xl mb-1">${icon}</p><p class="text-[9px] font-black text-gray-800 leading-tight truncate">${f.nombre || f.Nombre}</p><p class="text-[7px] text-gray-400 uppercase mt-0.5">${tipo}</p></div>`;
+            });
+        }
+
+        async function openFavDetail(tipo, id, nombre) {
+            document.getElementById('fav-movies-container').classList.remove('hidden');
+            document.getElementById('fav-movies-title').innerText = `${nombre} (${tipo})`;
+            const container = document.getElementById('fav-movies-results');
+            container.innerHTML = `<p class='text-xs text-purple-600 font-bold text-center p-4 animate-pulse'>Buscando obras...</p>`;
+            
+            if (tipo === 'Autor') {
+                trackAPI('book');
+                try {
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:"${encodeURIComponent(nombre)}"&maxResults=10`);
+                    const data = await res.json();
+                    container.innerHTML = "";
+                    if(!data.items) { container.innerHTML = "<p class='text-xs text-gray-500 text-center'>No hay obras recientes.</p>"; return; }
+                    data.items.forEach(b => {
+                        const info = b.volumeInfo;
+                        const poster = info.imageLinks?.thumbnail?.replace('http:','https:') || 'https://via.placeholder.com/200x300?text=Sin+Tapa';
+                        container.innerHTML += `<div onclick="openMovieDetail('${b.id}', 'explore')" class="bg-white p-2 rounded-xl flex gap-3 shadow-sm mb-2 cursor-pointer active:scale-95 border border-gray-100"><img src="${poster}" class="w-10 h-14 rounded object-cover"><div class="flex-1 flex flex-col justify-center"><p class="text-xs font-black text-gray-800 leading-tight">${info.title}</p><p class="text-[8px] text-gray-400 uppercase mt-0.5">${info.publishedDate || ''}</p></div></div>`;
+                    });
+                } catch(e) { container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error buscando libros.</p>"; }
+            } else {
+                trackAPI('tmdb');
+                try {
+                    const res = await fetch(`https://api.themoviedb.org/3/person/${id}/combined_credits?api_key=${TMDB_KEY}&language=es-ES`);
+                    const data = await res.json();
+                    container.innerHTML = "";
+                    let credits = tipo === 'Director' ? data.crew.filter(c => c.job === 'Director') : data.cast;
+                    if(!credits || credits.length === 0) { container.innerHTML = "<p class='text-xs text-gray-500 text-center'>No hay obras.</p>"; return; }
+                    
+                    credits.sort((a,b) => b.popularity - a.popularity).slice(0, 10).forEach(m => {
+                        const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300';
+                        container.innerHTML += `<div onclick="openMovieDetail('${m.id}', 'explore')" class="bg-white p-2 rounded-xl flex gap-3 shadow-sm mb-2 cursor-pointer active:scale-95 border border-gray-100"><img src="${posterUrl}" class="w-10 h-14 rounded object-cover"><div class="flex-1 flex flex-col justify-center"><p class="text-xs font-black text-gray-800 leading-tight">${m.title || m.name}</p><span class="text-[8px] font-bold text-gray-400 mt-1">⭐ ${m.vote_average?.toFixed(1)}</span></div></div>`;
+                    });
+                } catch(e) { container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error buscando obras.</p>"; }
+            }
+        }
+        function closeFavMovies() { document.getElementById('fav-movies-container').classList.add('hidden'); }
+
+        // --- MÓDULO RESTAURADO: MISIONES ---
+        function getMyMissions() { const p = profiles.find(x => x.user === currentUser); return p && p.missions ? p.missions.split(',').filter(x => x) : []; }
+        
+        async function toggleMission(mId) {
+            let active = getMyMissions();
+            if (active.includes(mId)) active = active.filter(id => id !== mId);
+            else { if(active.length >= 3) { alert("Máximo 3 misiones simultáneas."); return; } active.push(mId); }
+            
+            const p = profiles.find(x => x.user === currentUser); if(p) p.missions = active.join(',');
+            renderMissions();
             
             updateDBStatus('wait');
             try {
-                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'toggleFavorite', user: currentUser, tipo: type, id_persona: String(id), nombre: name }) });
+                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'updateMissions', user: currentUser, missions: active.join(',') }) });
                 updateDBStatus('online');
             } catch(e) { updateDBStatus('error'); }
-            
-            renderFavoritesTab();
         }
 
+        function renderMissions() {
+            const activeIds = getMyMissions(); 
+            const widget = document.getElementById('missions-widget'); 
+            const catalog = document.getElementById('missions-catalog');
+            if (!catalog || !widget) return;
+            
+            if (dbStatus === 'error') { catalog.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a Misiones</p></div>`; return; }
+
+            const myViews = getLatestStates().filter(s => s.watched);
+            widget.innerHTML = ""; catalog.innerHTML = "";
+            if(activeIds.length > 0) widget.classList.remove('hidden'); else widget.classList.add('hidden');
+            
+            const ALL_MISSIONS = [...LOCAL_MISSIONS, ...globalMissionsDB];
+            ALL_MISSIONS.forEach(m => {
+                const isActive = activeIds.includes(m.id || m.ID); 
+                let rawProgress = evaluateMission(m, myViews);
+                let target = parseInt(m.meta || m.target || m.Meta || 1); 
+                let progress = rawProgress > target ? target : rawProgress;
+                let percent = (progress / target) * 100; 
+                let isComplete = progress >= target;
+                
+                catalog.innerHTML += `<div class="bg-white p-4 rounded-2xl shadow-sm border ${isComplete ? 'border-green-300 bg-green-50' : 'border-gray-100'}"><h4 class="font-black text-xs text-gray-800">${m.name || m.nombre || m.Nombre}</h4><p class="text-[9px] text-gray-500 mt-0.5">${m.desc || m.Desc}</p><div class="mt-2 flex items-center gap-2"><div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="bg-green-500 h-1.5 rounded-full" style="width: ${percent}%"></div></div><span class="text-[8px] font-black">${progress}/${target}</span></div>${!isComplete ? `<button onclick="toggleMission('${m.id || m.ID}')" class="mt-2 w-full py-2 rounded-lg text-[9px] font-black transition-colors ${isActive ? 'bg-gray-100 text-gray-600' : 'bg-orange-100 text-orange-600'}">${isActive ? 'Ocultar' : 'Activar'}</button>` : ''}</div>`;
+                
+                if(isActive) {
+                    widget.innerHTML += `<div class="flex items-center gap-2"><p class="text-[8px] font-black uppercase w-16 truncate ${isComplete ? 'text-green-600' : 'text-orange-500'}">${m.name || m.nombre || m.Nombre}</p><div class="flex-1 bg-white/50 rounded-full h-1.5 overflow-hidden shadow-inner border border-white/40"><div class="bg-gradient-to-r ${isComplete ? 'from-green-400 to-green-600' : 'from-orange-400 to-red-400'} h-full rounded-full" style="width: ${percent}%"></div></div></div>`;
+                }
+            });
+        }
+
+        function evaluateMission(m, vistas) {
+            let field = m.campo || m.field || m.Regla || ""; let cond = m.condicion || m.cond || "includes"; let val = m.valor || m.val || "";
+            if(field === 'total') return vistas.length;
+            if(cond === 'includes') return vistas.filter(v => v[field] && String(v[field]).toLowerCase().includes(String(val).toLowerCase())).length;
+            if(cond === '<') return vistas.filter(v => parseInt(v[field]) < parseInt(val)).length;
+            return 0;
+        }
+
+        // --- SISTEMA DE LISTAS LOCALES ---
+        function renderWatchlist() {
+            const container = document.getElementById('prioridades-list'); 
+            if (dbStatus === 'error') { container.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a la Base de Datos</p><p class='text-[9px] text-red-400 mt-1'>Revisa tu internet o la URL del script.</p></div>`; return; }
+            if (dbStatus === 'wait') { container.innerHTML = `<div class='glass p-6 text-center mt-2'><p class='text-xs text-yellow-600 font-bold animate-pulse'>Sincronizando con Google Sheets...</p></div>`; return; }
+
+            let ctxType = currentContext === 'anime' ? 'tv' : currentContext; 
+            let pending = getLatestStates().filter(p => !p.watched && p.media_type === ctxType).reverse();
+            if(document.getElementById('sort-pending')?.value === 'priority') pending.sort((a,b) => scorePriority(b.priority) - scorePriority(a.priority));
+            
+            container.innerHTML = "";
+            if(pending.length===0) { container.innerHTML="<div class='glass p-6 text-center mt-2'><p class='text-xs text-purple-800 font-bold'>Lista limpia.</p></div>"; return; }
+            pending.forEach(p => {
+                const posterUrl = p.poster.startsWith('http') ? p.poster : `https://image.tmdb.org/t/p/w200${p.poster}`; let rSub = "";
+                if(p.media_type === 'movie') rSub = `${p.director || '?'} • ${p.countries || '🌍'} • ${p.duration?p.duration+'m':p.year}`; else if(p.media_type === 'tv' || p.media_type === 'anime') rSub = `${p.seasons?p.seasons+' Temp. • ':''}${p.status==='Returning Series'?'🟢 Emisión':'🔴 Terminada'}`; else if(p.media_type === 'book') rSub = `✒️ ${p.director} • 📚 ${p.duration||'?'} págs`;
+                container.innerHTML += `<div onclick="openMovieDetail('${p.id}', 'pending')" class="bg-white p-3 rounded-2xl flex gap-3 items-center shadow-sm border border-purple-50 cursor-pointer active:scale-[0.98]"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 pr-1"><p class="font-black text-[13px] text-gray-800 leading-tight">${p.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600">${p.priority}</span></div><button onclick="event.stopPropagation(); openFeedbackModal('${p.id}')" class="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm active:scale-90 z-40">Calificar ✏️</button></div>`;
+            });
+        }
+
+        function renderHistoryTab() {
+            const container = document.getElementById('historial-list'); 
+            if (dbStatus === 'error') { container.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a la Base de Datos</p></div>`; return; }
+            if (dbStatus === 'wait') { container.innerHTML = `<div class='glass p-6 text-center mt-2'><p class='text-xs text-yellow-600 font-bold animate-pulse'>Descargando historial...</p></div>`; return; }
+
+            let ctxType = currentContext === 'anime' ? 'tv' : currentContext;
+            let views = getLatestStates().filter(h => h.watched && h.media_type === ctxType).reverse();
+            if(document.getElementById('sort-history')?.value === 'best') views.sort((a,b) => scoreRating(b.rating) - scoreRating(a.rating));
+            else if(document.getElementById('sort-history')?.value === 'worst') views.sort((a,b) => scoreRating(a.rating) - scoreRating(b.rating));
+
+            container.innerHTML = "";
+            if(views.length===0) { container.innerHTML="<div class='bg-white/50 p-6 text-center rounded-2xl'><p class='text-xs text-gray-500 font-bold'>Aún no hay reseñas.</p></div>"; return; }
+            views.forEach(h => {
+                const posterUrl = h.poster.startsWith('http') ? h.poster : `https://image.tmdb.org/t/p/w200${h.poster}`; let rSub = "";
+                if(h.media_type === 'movie') rSub = `${h.countries || '🌍'} • ${h.duration?h.duration+'m':h.year}`; else if(h.media_type === 'tv' || h.media_type === 'anime') rSub = `${h.seasons?h.seasons+'T • ':''}${h.status==='Returning Series'?'🟢':'🔴'} • ${h.year}`; else if(h.media_type === 'book') rSub = `✒️ ${h.director} • ${h.year}`;
+                container.innerHTML += `<div onclick="openMovieDetail('${h.id}', 'history')" class="bg-white p-3 rounded-2xl text-xs shadow-sm flex gap-3 border border-purple-50 cursor-pointer active:scale-95"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 flex flex-col justify-center"><p class="font-black text-[13px] text-gray-800 leading-tight">${h.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="text-[9px] font-black text-gray-800 bg-gray-100 px-2 py-0.5 rounded mt-1.5 inline-block w-max shadow-sm">${h.rating} ${h.comment?'💬':''}</span></div></div>`;
+            });
+        }
+
+        // --- SISTEMA DE DETALLE Y GUARDADO ---
+        function checkFav(id) { return globalFavorites.some(f => String(f.user || f.usuario || "").trim() === currentUser.trim() && String(f.id || f.id_persona || f.ID_Persona) === String(id)); }
+        
         async function openMovieDetail(movieId, context) {
             const modal = document.getElementById('movie-detail-modal'); modal.classList.remove('hidden');
             document.getElementById('detail-title').innerText = "Cargando..."; document.getElementById('detail-streaming').classList.add('hidden');
@@ -521,8 +652,7 @@
                     const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${movieId}`); const b = await res.json();
                     const info = b.volumeInfo;
                     const poster = info.imageLinks?.thumbnail?.replace('http:','https:') || 'https://via.placeholder.com/300x450?text=Sin+Tapa';
-                    const author = info.authors ? info.authors[0] : 'Desconocido';
-                    const pages = info.pageCount || "?";
+                    const author = info.authors ? info.authors[0] : 'Desconocido'; const pages = info.pageCount || "?";
                     
                     document.getElementById('detail-header-bg').style.backgroundImage = `url(${poster})`; document.getElementById('detail-poster-img').src = poster;
                     document.getElementById('detail-title').innerHTML = `${info.title} <br><span class="text-[9px] text-gray-400 font-bold leading-none">(${info.publisher || 'Edición Independiente'})</span>`;
@@ -577,6 +707,7 @@
                 }
 
                 document.getElementById('detail-overview').innerText = det.overview || "Sinopsis no disponible.";
+                
                 if(directorObj) {
                     const safeId = String(directorObj.id).replace(/[^a-zA-Z0-9]/g, '_'); const star = checkFav(directorObj.id) ? "⭐" : "☆";
                     document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 cursor-pointer w-max inline-block" onclick="toggleFav('Director', '${directorObj.id}', '${(directorObj.name).replace(/'/g,"")}')">${directorObj.name} <span id="fav-icon-${safeId}" class="text-xs">${star}</span></span>`;
@@ -603,47 +734,6 @@
                 const states = getLatestStates(); const row = states.find(h => String(h.id) === String(id) && h.watched);
                 actionsDiv.innerHTML = `<div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-200 shadow-inner mt-4"><p class="text-[9px] font-black uppercase text-yellow-600 mb-1 tracking-widest">Tu Reseña</p><p class="font-black text-lg text-gray-800">${row?.rating || ''}</p>${row?.comment ? `<p class="italic text-gray-600 text-xs mt-2 bg-white/50 p-2 rounded">💬 "${row.comment}"</p>` : ''}</div>`;
             }
-        }
-
-        // --- RENDER DE ERROR BOUNDARIES ---
-        function renderWatchlist() {
-            const container = document.getElementById('prioridades-list'); 
-            
-            // Lógica Error Boundaries
-            if (dbStatus === 'error') { container.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a la Base de Datos</p><p class='text-[9px] text-red-400 mt-1'>Revisa tu internet o la URL del script.</p></div>`; return; }
-            if (dbStatus === 'wait') { container.innerHTML = `<div class='glass p-6 text-center mt-2'><p class='text-xs text-yellow-600 font-bold animate-pulse'>Sincronizando con Google Sheets...</p></div>`; return; }
-
-            let ctxType = currentContext === 'anime' ? 'tv' : currentContext; 
-            let pending = getLatestStates().filter(p => !p.watched && p.media_type === ctxType).reverse();
-            if(document.getElementById('sort-pending')?.value === 'priority') pending.sort((a,b) => scorePriority(b.priority) - scorePriority(a.priority));
-            
-            container.innerHTML = "";
-            if(pending.length===0) { container.innerHTML="<div class='glass p-6 text-center mt-2'><p class='text-xs text-purple-800 font-bold'>Lista limpia.</p></div>"; return; }
-            pending.forEach(p => {
-                const posterUrl = p.poster.startsWith('http') ? p.poster : `https://image.tmdb.org/t/p/w200${p.poster}`; let rSub = "";
-                if(p.media_type === 'movie') rSub = `${p.director || '?'} • ${p.countries || '🌍'} • ${p.duration?p.duration+'m':p.year}`; else if(p.media_type === 'tv' || p.media_type === 'anime') rSub = `${p.seasons?p.seasons+' Temp. • ':''}${p.status==='Returning Series'?'🟢 Emisión':'🔴 Terminada'}`; else if(p.media_type === 'book') rSub = `✒️ ${p.director} • 📚 ${p.duration||'?'} págs`;
-                container.innerHTML += `<div onclick="openMovieDetail('${p.id}', 'pending')" class="bg-white p-3 rounded-2xl flex gap-3 items-center shadow-sm border border-purple-50 cursor-pointer active:scale-[0.98]"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 pr-1"><p class="font-black text-[13px] text-gray-800 leading-tight">${p.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600">${p.priority}</span></div><button onclick="event.stopPropagation(); openFeedbackModal('${p.id}')" class="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm active:scale-90 z-40">Calificar ✏️</button></div>`;
-            });
-        }
-
-        function renderHistoryTab() {
-            const container = document.getElementById('historial-list'); 
-            
-            if (dbStatus === 'error') { container.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a la Base de Datos</p></div>`; return; }
-            if (dbStatus === 'wait') { container.innerHTML = `<div class='glass p-6 text-center mt-2'><p class='text-xs text-yellow-600 font-bold animate-pulse'>Descargando historial...</p></div>`; return; }
-
-            let ctxType = currentContext === 'anime' ? 'tv' : currentContext;
-            let views = getLatestStates().filter(h => h.watched && h.media_type === ctxType).reverse();
-            if(document.getElementById('sort-history')?.value === 'best') views.sort((a,b) => scoreRating(b.rating) - scoreRating(a.rating));
-            else if(document.getElementById('sort-history')?.value === 'worst') views.sort((a,b) => scoreRating(a.rating) - scoreRating(b.rating));
-
-            container.innerHTML = "";
-            if(views.length===0) { container.innerHTML="<div class='bg-white/50 p-6 text-center rounded-2xl'><p class='text-xs text-gray-500 font-bold'>Aún no hay reseñas.</p></div>"; return; }
-            views.forEach(h => {
-                const posterUrl = h.poster.startsWith('http') ? h.poster : `https://image.tmdb.org/t/p/w200${h.poster}`; let rSub = "";
-                if(h.media_type === 'movie') rSub = `${h.countries || '🌍'} • ${h.duration?h.duration+'m':h.year}`; else if(h.media_type === 'tv' || h.media_type === 'anime') rSub = `${h.seasons?h.seasons+'T • ':''}${h.status==='Returning Series'?'🟢':'🔴'} • ${h.year}`; else if(h.media_type === 'book') rSub = `✒️ ${h.director} • ${h.year}`;
-                container.innerHTML += `<div onclick="openMovieDetail('${h.id}', 'history')" class="bg-white p-3 rounded-2xl text-xs shadow-sm flex gap-3 border border-purple-50 cursor-pointer active:scale-95"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 flex flex-col justify-center"><p class="font-black text-[13px] text-gray-800 leading-tight">${h.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="text-[9px] font-black text-gray-800 bg-gray-100 px-2 py-0.5 rounded mt-1.5 inline-block w-max shadow-sm">${h.rating} ${h.comment?'💬':''}</span></div></div>`;
-            });
         }
 
         async function changeInteractionState(priority, watchedState) {
