@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eiga 映画 v7.4 Ultimate</title>
+    <title>Eiga 映画 v7.6 Connection Monitor</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎦</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -24,7 +24,7 @@
 
     <div id="loading-screen" class="fixed inset-0 bg-white/95 flex flex-col items-center justify-center z-[500] backdrop-blur-md">
         <div class="animate-bounce text-6xl mb-4 bg-white p-5 rounded-full shadow-2xl">🎦</div>
-        <p class="font-black text-purple-900 animate-pulse tracking-widest text-xs uppercase italic">Eiga Ultimate Loading...</p>
+        <p class="font-black text-purple-900 animate-pulse tracking-widest text-xs uppercase italic" id="loading-text">Eiga Ultimate Loading...</p>
     </div>
 
     <div id="user-selection" class="hidden flex flex-col items-center justify-center h-screen space-y-10">
@@ -46,9 +46,10 @@
                     <div>
                         <p class="text-[9px] font-black text-purple-400 uppercase tracking-widest leading-none">Es tu turno,</p>
                         <h2 id="welcome" class="text-xl font-black text-purple-900 leading-tight"></h2>
-                        <div class="text-[8px] font-black uppercase tracking-widest mt-1">
+                        <div class="text-[8px] font-black uppercase tracking-widest mt-1 flex flex-wrap gap-1">
                             <span class="text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded border border-pink-100 shadow-sm">📡 M: <span id="api-m">0</span>/∞</span> 
-                            <span class="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 shadow-sm ml-1">📚 B: <span id="api-b">0</span>/1K</span>
+                            <span class="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 shadow-sm">📚 B: <span id="api-b">0</span>/1K</span>
+                            <span id="db-status" class="text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200 shadow-sm transition-colors">🟡 DB: WAIT</span>
                         </div>
                     </div>
                 </div>
@@ -100,7 +101,7 @@
                     <div id="genre-container" class="flex flex-wrap gap-2 mt-1 relative z-30"></div>
                     <div class="grid grid-cols-2 gap-3 mt-3 relative z-20">
                         <select id="region" class="w-full p-2.5 bg-white/80 rounded-xl text-[10px] font-bold shadow-sm outline-none border border-gray-100">
-                            <option value="">🌎 Origen (Todos)</option><option value="CL">🇨🇱 Chile</option><option value="AR|BR|CO|MX|PE|UY|VE">🌮 Latinoamérica</option><option value="US">🇺🇸 USA / Inglés</option><option value="ES|FR|GB|DE|IT|NL|SE">🌍 Europa</option><option value="RU|PL|CZ|HU|RO|UA">❄️ Rusia / Este</option><option value="JP|KR|CN|TW|HK">⛩️ Asia Oriental</option><option value="IN|PK|BD">🪷 India / Sur Asia</option><option value="IR|TR|IL|EG|AE">🐪 Medio Oriente</option>
+                            <option value="">🌎 Origen (Todos)</option><option value="CL">🇨🇱 Chile</option><option value="AR|BR|CO|MX|PE|UY|VE">🌮 Latinoamérica</option><option value="US">🇺🇸 USA / Inglés</option><option value="ES|FR|GB|DE|IT|NL|SE">🌍 Europa</option><option value="RU|PL|CZ|HU|RO|UA">❄️ Rusia / Europa Este</option><option value="JP|KR|CN|TW|HK">⛩️ Asia Oriental</option><option value="IN|PK|BD">🪷 India / Sur Asia</option><option value="IR|TR|IL|EG|AE">🐪 Medio Oriente</option>
                         </select>
                         <select id="duration" class="w-full p-2.5 bg-white/80 rounded-xl text-[10px] font-bold shadow-sm outline-none border border-gray-100">
                             <option value="400">⏱️ Duración (Todas)</option><option value="90">⏳ Corta (-1h30m)</option><option value="120">🎬 Normal (-2h)</option><option value="180">🍿 Épica (-3h)</option>
@@ -200,12 +201,61 @@
         let activeMovieIdForFeedback = null;
         let searchPage = 1;
         let currentSearchMode = 'filters'; 
+        let dbStatus = 'wait'; // Monitor Global de DB (wait, online, error)
 
         const GENRE_MAP = { 28:"Acción", 35:"Comedia", 18:"Drama", 27:"Terror", 10749:"Romance", 878:"Sci-Fi", 53:"Thriller", 16:"Animación", 99:"Documental", 10759:"Acción/Aventura", 10765:"Sci-Fi/Fantasía", 80:"Crimen", 9648:"Misterio", 10768:"Política" };
         const BOOK_GENRES = { "Fiction":"Novela/Ficción", "Philosophy":"Filosofía", "Political+Science":"Política", "Science":"Ciencia", "History":"Historia", "Biography":"Biografía", "Business":"Negocios", "Self-Help":"Autoayuda" };
         const BOOK_REGION_MAP = { "CL":"Chile", "AR|BR|CO|MX|PE|UY|VE":"Latinoamérica", "US":"Estados Unidos", "ES|FR|GB|DE|IT|NL|SE":"Europa", "RU|PL|CZ|HU|RO|UA":"Rusia", "JP|KR|CN|TW|HK":"Asia", "IN|PK|BD":"India", "IR|TR|IL|EG|AE":"Oriente Medio" };
 
         const LOCAL_MISSIONS = [ { id: 'm1', name: 'Cinéfilo Novato', desc: 'Ve 1 obra.', target: 1, field: 'total', cond: 'count', val: '' }, { id: 'm2', name: 'Crítico Exigente', desc: 'Pon 2 "Obra Maestra".', target: 2, field: 'calificacion', cond: 'includes', val: 'Obra Maestra' }, { id: 'm3', name: 'Pasado Clásico', desc: 'Ve 2 del siglo 20.', target: 2, field: 'año', cond: '<', val: '2000' } ];
+
+        // --- SISTEMA DE MONITOREO DE RED (UI) ---
+        function updateDBStatus(status) {
+            dbStatus = status;
+            const badge = document.getElementById('db-status');
+            if(!badge) return;
+            if(status === 'wait') {
+                badge.className = "text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200 shadow-sm transition-colors";
+                badge.innerHTML = "🟡 DB: SYNC...";
+            } else if(status === 'online') {
+                badge.className = "text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 shadow-sm transition-colors";
+                badge.innerHTML = "🟢 DB: ONLINE";
+            } else {
+                badge.className = "text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200 shadow-sm animate-pulse transition-colors";
+                badge.innerHTML = "🔴 DB: ERROR";
+            }
+        }
+
+        // --- EL CORAZÓN RESTAURADO: FECTH DATA ---
+        async function loadData() {
+            updateDBStatus('wait');
+            renderWatchlist(); renderHistoryTab(); renderFavoritesTab(); renderMissions();
+            
+            try {
+                // LLAMADA SIMULTÁNEA A GOOGLE SHEETS
+                const [hRes, fRes, mRes] = await Promise.all([ 
+                    fetch(`${GAS_URL}?action=getHistory`), 
+                    fetch(`${GAS_URL}?action=getFavorites`), 
+                    fetch(`${GAS_URL}?action=getMissionsDB`) 
+                ]);
+                
+                if(!hRes.ok || !fRes.ok) throw new Error("Fallo en la respuesta de Google Sheets");
+
+                globalHistory = await hRes.json(); 
+                globalFavorites = await fRes.json(); 
+                globalMissionsDB = await mRes.json();
+                
+                if(!Array.isArray(globalFavorites)) globalFavorites = []; 
+                if(!Array.isArray(globalMissionsDB)) globalMissionsDB = [];
+                
+                updateDBStatus('online');
+                renderWatchlist(); renderHistoryTab(); renderFavoritesTab(); renderMissions();
+            } catch(e) { 
+                console.error("Error crítico sincronizando base de datos:", e); 
+                updateDBStatus('error');
+                renderWatchlist(); renderHistoryTab(); renderFavoritesTab(); renderMissions();
+            }
+        }
 
         // --- SÚPER NORMALIZADOR (LEGACY DATA) ---
         function getSafeMedia(raw) {
@@ -237,7 +287,7 @@
                 priority: h.prioridad || h.priority || "",
                 rating: h.calificacion || h.rating || "",
                 comment: h.comentario || h.comment || "",
-                user: String(h.usuario || h.user || "").trim() // Limpia "Maca " a "Maca"
+                user: String(h.usuario || h.user || "").trim()
             };
         }
 
@@ -255,7 +305,7 @@
             return Array.from(latest.values());
         }
 
-        // --- TELEMETRÍA ---
+        // --- TELEMETRÍA API ---
         function trackAPI(type) {
             let month = new Date().getMonth();
             if (localStorage.getItem('eiga_api_month') != month) { localStorage.setItem('eiga_api_month', month); localStorage.setItem('eiga_api_m', 0); localStorage.setItem('eiga_api_b', 0); }
@@ -270,10 +320,19 @@
 
         window.onload = async () => {
             loadAPITracker();
+            updateDBStatus('wait');
             try {
-                const res = await fetch(`${GAS_URL}?action=getProfiles`); profiles = await res.json(); renderProfiles();
+                const res = await fetch(`${GAS_URL}?action=getProfiles`); 
+                if(!res.ok) throw new Error("Sin conexión a perfiles");
+                profiles = await res.json(); 
+                updateDBStatus('online');
+                renderProfiles();
                 document.getElementById('loading-screen').classList.add('hidden'); document.getElementById('user-selection').classList.remove('hidden');
-            } catch(e) { alert("Error de conexión con Sheets."); }
+            } catch(e) { 
+                updateDBStatus('error');
+                document.getElementById('loading-text').innerText = "Fallo de conexión. Revisa URL de Apps Script.";
+                document.getElementById('loading-text').classList.add('text-red-600');
+            }
         };
 
         function renderProfiles() {
@@ -284,7 +343,8 @@
         async function selectUser(user, emoji) {
             currentUser = user; document.getElementById('user-selection').classList.add('hidden'); document.getElementById('app-main').classList.remove('hidden'); document.getElementById('welcome').innerText = user;
             document.getElementById('main-avatar').innerHTML = `${emoji} <span class="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center shadow">⚙️</span>`;
-            setContext('movie'); await loadData();
+            setContext('movie'); // Llama a los renderers con estado "wait"
+            await loadData();    // Inicia la descarga profunda
         }
 
         function setContext(ctx) {
@@ -351,7 +411,6 @@
                     const regionText = BOOK_REGION_MAP[regionVal] || "";
                     let qParts = [];
                     if (genreIds) qParts.push(`subject:${genreIds}`);
-                    // ALGORITMO EXPANDIDO: Inyecta el país como keyword libre sin "subject:"
                     if (regionText) qParts.push(`"${regionText}"`); 
                     queryStr = qParts.length === 0 ? "subject:fiction" : qParts.join('+');
                 }
@@ -424,7 +483,7 @@
             } catch(e) { if(!isLoadMore) container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error TMDB.</p>"; }
         }
 
-        // --- FAVORITOS Y DETALLE (REFACTORIZADO) ---
+        // --- FAVORITOS Y DETALLE ---
         function checkFav(id) { return globalFavorites.some(f => f.user === currentUser && String(f.id) === String(id)); }
         async function toggleFav(type, id, name) {
             event.stopPropagation(); const isFav = checkFav(id);
@@ -432,7 +491,13 @@
             const icon = document.getElementById(`fav-icon-${safeId}`); if(icon) icon.innerText = isFav ? "☆" : "⭐";
             if(isFav) globalFavorites = globalFavorites.filter(f => !(f.user === currentUser && String(f.id) === String(id)));
             else globalFavorites.push({user: currentUser, tipo: type, id: String(id), nombre: name});
-            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'toggleFavorite', user: currentUser, tipo: type, id_persona: String(id), nombre: name }) });
+            
+            updateDBStatus('wait');
+            try {
+                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'toggleFavorite', user: currentUser, tipo: type, id_persona: String(id), nombre: name }) });
+                updateDBStatus('online');
+            } catch(e) { updateDBStatus('error'); }
+            
             renderFavoritesTab();
         }
 
@@ -465,11 +530,8 @@
                     pills.innerHTML = `<span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[8px] font-black">${info.publishedDate?.split('-')[0] || ''}</span><span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">📚 ${pages} Págs</span>`;
                     document.getElementById('detail-overview').innerHTML = info.description || "Sinopsis no disponible.";
                     
-                    // FAVORITO AUTOR LITERARIO (Safe ID)
-                    const safeId = author.replace(/[^a-zA-Z0-9]/g, '_');
-                    const star = checkFav(author) ? "⭐" : "☆";
+                    const safeId = author.replace(/[^a-zA-Z0-9]/g, '_'); const star = checkFav(author) ? "⭐" : "☆";
                     document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 cursor-pointer w-max inline-block" onclick="toggleFav('Autor', '${author.replace(/'/g,"")}', '${author.replace(/'/g,"")}')">${author} <span id="fav-icon-${safeId}" class="text-xs">${star}</span></span>`;
-                    
                     document.getElementById('detail-cast').innerHTML = `<span class="text-xs font-bold text-gray-600">${info.categories?.[0] || 'General'}</span>`;
 
                     currentMovieData = { id: b.id, title: info.title.replace(/'/g,""), original_title: "", poster: poster, director: author, year: info.publishedDate?.split('-')[0] || "", countries: "", genres: info.categories?.[0] || "", media_type: 'book', duracion: pages, temporadas: "", estado: "" };
@@ -499,9 +561,7 @@
                 if(type === 'tv') {
                     pills.innerHTML += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">${det.status === 'Returning Series' ? '🟢 EN EMISIÓN' : '🔴 TERMINADA'}</span>`;
                     pills.innerHTML += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">${det.number_of_seasons} TEMP.</span>`;
-                } else if(type === 'movie') {
-                    pills.innerHTML += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">⏱️ ${det.runtime}m</span>`;
-                }
+                } else if(type === 'movie') { pills.innerHTML += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">⏱️ ${det.runtime}m</span>`; }
                 pills.innerHTML += `<span class="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black">⭐ ${det.vote_average.toFixed(1)}</span>`;
 
                 const streamData = providers.results?.CL?.flatrate;
@@ -517,16 +577,13 @@
                 }
 
                 document.getElementById('detail-overview').innerText = det.overview || "Sinopsis no disponible.";
-                
                 if(directorObj) {
-                    const safeId = String(directorObj.id).replace(/[^a-zA-Z0-9]/g, '_');
-                    const star = checkFav(directorObj.id) ? "⭐" : "☆";
-                    document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 cursor-pointer" onclick="toggleFav('Director', '${directorObj.id}', '${(directorObj.name).replace(/'/g,"")}')">${directorObj.name} <span id="fav-icon-${safeId}" class="text-xs">${star}</span></span>`;
+                    const safeId = String(directorObj.id).replace(/[^a-zA-Z0-9]/g, '_'); const star = checkFav(directorObj.id) ? "⭐" : "☆";
+                    document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 cursor-pointer w-max inline-block" onclick="toggleFav('Director', '${directorObj.id}', '${(directorObj.name).replace(/'/g,"")}')">${directorObj.name} <span id="fav-icon-${safeId}" class="text-xs">${star}</span></span>`;
                 } else document.getElementById('detail-director').innerText = "Desconocido";
 
                 document.getElementById('detail-cast').innerHTML = castObjs?.map(c => {
-                    const safeId = String(c.id).replace(/[^a-zA-Z0-9]/g, '_');
-                    const star = checkFav(c.id) ? "⭐" : "☆"; return `<div class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 cursor-pointer w-max inline-block mr-1 mb-1" onclick="toggleFav('Actor', '${c.id}', '${(c.name).replace(/'/g,"")}')">${c.name} <span id="fav-icon-${safeId}" class="text-xs">${star}</span></div>`;
+                    const safeId = String(c.id).replace(/[^a-zA-Z0-9]/g, '_'); const star = checkFav(c.id) ? "⭐" : "☆"; return `<div class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 cursor-pointer w-max inline-block mr-1 mb-1" onclick="toggleFav('Actor', '${c.id}', '${(c.name).replace(/'/g,"")}')">${c.name} <span id="fav-icon-${safeId}" class="text-xs">${star}</span></div>`;
                 }).join('') || '';
 
                 currentMovieData = { id: det.id, title: (det.title||det.name).replace(/'/g, ""), original_title: (det.original_title||det.original_name).replace(/'/g, ""), poster: det.poster_path, director: directorObj?.name || "", year: year, countries: isoCountry, genres: det.genres?.[0]?.name || "", media_type: currentContext, duracion: det.runtime || "", temporadas: det.number_of_seasons || "", estado: det.status || "" };
@@ -534,7 +591,6 @@
             } catch(e) { document.getElementById('detail-title').innerText = "Error de conexión."; }
         }
 
-        // --- ESCUDO ANTI-COMILLAS (Pasamos solo el ID) ---
         function renderActions(id, context) {
             const actionsDiv = document.getElementById('detail-actions');
             if (context === 'explore') {
@@ -544,39 +600,39 @@
                 let txt1 = currentContext === 'book' ? "👁️ Calificar Lectura" : "👁️ Calificar Vista";
                 actionsDiv.innerHTML = `<button onclick="openFeedbackModal('${id}')" class="w-full py-3 bg-white text-gray-800 rounded-xl font-black shadow-lg border border-gray-200 active:scale-95 text-xs mb-2">${txt1}</button><button onclick="changeInteractionState('Ninguna', 'DESCARTADA')" class="w-full py-2 bg-gray-100 text-red-500 rounded-xl font-bold border border-red-100 active:scale-95 text-[10px] uppercase">🗑️ Ya no me interesa</button>`;
             } else if (context === 'history') {
-                const states = getLatestStates();
-                const row = states.find(h => String(h.id) === String(id) && h.watched);
+                const states = getLatestStates(); const row = states.find(h => String(h.id) === String(id) && h.watched);
                 actionsDiv.innerHTML = `<div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-200 shadow-inner mt-4"><p class="text-[9px] font-black uppercase text-yellow-600 mb-1 tracking-widest">Tu Reseña</p><p class="font-black text-lg text-gray-800">${row?.rating || ''}</p>${row?.comment ? `<p class="italic text-gray-600 text-xs mt-2 bg-white/50 p-2 rounded">💬 "${row.comment}"</p>` : ''}</div>`;
             }
         }
 
-        function closeDetailModal() { document.getElementById('movie-detail-modal').classList.add('hidden'); }
-
-        // --- RENDER LOCAL (NORMALIZADO Y ANTI-COMILLAS) ---
+        // --- RENDER DE ERROR BOUNDARIES ---
         function renderWatchlist() {
             const container = document.getElementById('prioridades-list'); 
-            let ctxType = currentContext === 'anime' ? 'tv' : currentContext; 
             
+            // Lógica Error Boundaries
+            if (dbStatus === 'error') { container.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a la Base de Datos</p><p class='text-[9px] text-red-400 mt-1'>Revisa tu internet o la URL del script.</p></div>`; return; }
+            if (dbStatus === 'wait') { container.innerHTML = `<div class='glass p-6 text-center mt-2'><p class='text-xs text-yellow-600 font-bold animate-pulse'>Sincronizando con Google Sheets...</p></div>`; return; }
+
+            let ctxType = currentContext === 'anime' ? 'tv' : currentContext; 
             let pending = getLatestStates().filter(p => !p.watched && p.media_type === ctxType).reverse();
             if(document.getElementById('sort-pending')?.value === 'priority') pending.sort((a,b) => scorePriority(b.priority) - scorePriority(a.priority));
             
             container.innerHTML = "";
             if(pending.length===0) { container.innerHTML="<div class='glass p-6 text-center mt-2'><p class='text-xs text-purple-800 font-bold'>Lista limpia.</p></div>"; return; }
             pending.forEach(p => {
-                const posterUrl = p.poster.startsWith('http') ? p.poster : `https://image.tmdb.org/t/p/w200${p.poster}`;
-                let rSub = "";
-                if(p.media_type === 'movie') rSub = `${p.director || '?'} • ${p.countries || '🌍'} • ${p.duration?p.duration+'m':p.year}`;
-                else if(p.media_type === 'tv' || p.media_type === 'anime') rSub = `${p.seasons?p.seasons+' Temp. • ':''}${p.status==='Returning Series'?'🟢 Emisión':'🔴 Terminada'}`;
-                else if(p.media_type === 'book') rSub = `✒️ ${p.director} • 📚 ${p.duration||'?'} págs`;
-
+                const posterUrl = p.poster.startsWith('http') ? p.poster : `https://image.tmdb.org/t/p/w200${p.poster}`; let rSub = "";
+                if(p.media_type === 'movie') rSub = `${p.director || '?'} • ${p.countries || '🌍'} • ${p.duration?p.duration+'m':p.year}`; else if(p.media_type === 'tv' || p.media_type === 'anime') rSub = `${p.seasons?p.seasons+' Temp. • ':''}${p.status==='Returning Series'?'🟢 Emisión':'🔴 Terminada'}`; else if(p.media_type === 'book') rSub = `✒️ ${p.director} • 📚 ${p.duration||'?'} págs`;
                 container.innerHTML += `<div onclick="openMovieDetail('${p.id}', 'pending')" class="bg-white p-3 rounded-2xl flex gap-3 items-center shadow-sm border border-purple-50 cursor-pointer active:scale-[0.98]"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 pr-1"><p class="font-black text-[13px] text-gray-800 leading-tight">${p.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600">${p.priority}</span></div><button onclick="event.stopPropagation(); openFeedbackModal('${p.id}')" class="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm active:scale-90 z-40">Calificar ✏️</button></div>`;
             });
         }
 
         function renderHistoryTab() {
             const container = document.getElementById('historial-list'); 
-            let ctxType = currentContext === 'anime' ? 'tv' : currentContext;
             
+            if (dbStatus === 'error') { container.innerHTML = `<div class='bg-red-50 border border-red-200 p-6 text-center rounded-2xl mt-2'><p class='text-xs text-red-600 font-black'>⚠️ Sin conexión a la Base de Datos</p></div>`; return; }
+            if (dbStatus === 'wait') { container.innerHTML = `<div class='glass p-6 text-center mt-2'><p class='text-xs text-yellow-600 font-bold animate-pulse'>Descargando historial...</p></div>`; return; }
+
+            let ctxType = currentContext === 'anime' ? 'tv' : currentContext;
             let views = getLatestStates().filter(h => h.watched && h.media_type === ctxType).reverse();
             if(document.getElementById('sort-history')?.value === 'best') views.sort((a,b) => scoreRating(b.rating) - scoreRating(a.rating));
             else if(document.getElementById('sort-history')?.value === 'worst') views.sort((a,b) => scoreRating(a.rating) - scoreRating(b.rating));
@@ -584,42 +640,32 @@
             container.innerHTML = "";
             if(views.length===0) { container.innerHTML="<div class='bg-white/50 p-6 text-center rounded-2xl'><p class='text-xs text-gray-500 font-bold'>Aún no hay reseñas.</p></div>"; return; }
             views.forEach(h => {
-                const posterUrl = h.poster.startsWith('http') ? h.poster : `https://image.tmdb.org/t/p/w200${h.poster}`;
-                let rSub = "";
-                if(h.media_type === 'movie') rSub = `${h.countries || '🌍'} • ${h.duration?h.duration+'m':h.year}`;
-                else if(h.media_type === 'tv' || h.media_type === 'anime') rSub = `${h.seasons?h.seasons+'T • ':''}${h.status==='Returning Series'?'🟢':'🔴'} • ${h.year}`;
-                else if(h.media_type === 'book') rSub = `✒️ ${h.director} • ${h.year}`;
-
+                const posterUrl = h.poster.startsWith('http') ? h.poster : `https://image.tmdb.org/t/p/w200${h.poster}`; let rSub = "";
+                if(h.media_type === 'movie') rSub = `${h.countries || '🌍'} • ${h.duration?h.duration+'m':h.year}`; else if(h.media_type === 'tv' || h.media_type === 'anime') rSub = `${h.seasons?h.seasons+'T • ':''}${h.status==='Returning Series'?'🟢':'🔴'} • ${h.year}`; else if(h.media_type === 'book') rSub = `✒️ ${h.director} • ${h.year}`;
                 container.innerHTML += `<div onclick="openMovieDetail('${h.id}', 'history')" class="bg-white p-3 rounded-2xl text-xs shadow-sm flex gap-3 border border-purple-50 cursor-pointer active:scale-95"><img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100"><div class="flex-1 flex flex-col justify-center"><p class="font-black text-[13px] text-gray-800 leading-tight">${h.title}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${rSub}</p><span class="text-[9px] font-black text-gray-800 bg-gray-100 px-2 py-0.5 rounded mt-1.5 inline-block w-max shadow-sm">${h.rating} ${h.comment?'💬':''}</span></div></div>`;
             });
         }
 
         async function changeInteractionState(priority, watchedState) {
             const btn = event.target; btn.innerText = "⏳..."; btn.disabled = true;
-            const payload = { 
-                action: 'saveInteraction', user: currentUser, movie_id: currentMovieData.id, 
-                title: currentMovieData.title, original_title: currentMovieData.original_title, poster: currentMovieData.poster, 
-                director: currentMovieData.director, year: currentMovieData.year, countries: currentMovieData.countries, 
-                genres: currentMovieData.genres, media_type: currentMovieData.media_type, duracion: currentMovieData.duracion, 
-                temporadas: currentMovieData.temporadas, estado: currentMovieData.estado, watched: watchedState, priority: priority, rating: "", comment: "" 
-            };
-            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-            closeDetailModal(); setTimeout(() => { loadData(); }, 800);
+            const payload = { action: 'saveInteraction', user: currentUser, movie_id: currentMovieData.id, title: currentMovieData.title, original_title: currentMovieData.original_title, poster: currentMovieData.poster, director: currentMovieData.director, year: currentMovieData.year, countries: currentMovieData.countries, genres: currentMovieData.genres, media_type: currentMovieData.media_type, duracion: currentMovieData.duracion, temporadas: currentMovieData.temporadas, estado: currentMovieData.estado, watched: watchedState, priority: priority, rating: "", comment: "" };
+            
+            updateDBStatus('wait');
+            try {
+                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                closeDetailModal(); setTimeout(() => { loadData(); }, 800);
+            } catch(e) { updateDBStatus('error'); btn.innerText = "Error"; btn.disabled = false; }
         }
 
-        // --- BÚSQUEDA INTELIGENTE DEL TÍTULO PARA FEEDBACK ---
         function openFeedbackModal(id) { 
             event.stopPropagation(); closeDetailModal(); activeMovieIdForFeedback = id; 
             let title = "Contenido";
             if (currentMovieData && String(currentMovieData.id) === String(id)) title = currentMovieData.title;
-            else {
-                const item = getLatestStates().find(i => String(i.id) === String(id));
-                if (item) title = item.title;
-            }
-            document.getElementById('f-movie-title').innerText = title; 
-            document.getElementById('feedback-modal').classList.remove('hidden'); 
+            else { const item = getLatestStates().find(i => String(i.id) === String(id)); if (item) title = item.title; }
+            document.getElementById('f-movie-title').innerText = title; document.getElementById('feedback-modal').classList.remove('hidden'); 
         }
 
+        function closeDetailModal() { document.getElementById('movie-detail-modal').classList.add('hidden'); }
         function closeFeedbackModal() { document.getElementById('feedback-modal').classList.add('hidden'); }
         function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`tab-${t}`).classList.remove('hidden'); document.getElementById(`btn-${t}`).classList.add('active'); }
         function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
@@ -631,21 +677,14 @@
         
         async function submitFeedback() {
             const btn = event.target; btn.innerText = "⏳..."; btn.disabled = true;
-            let states = getLatestStates();
-            let ex = states.find(h => String(h.id) === String(activeMovieIdForFeedback));
+            let states = getLatestStates(); let ex = states.find(h => String(h.id) === String(activeMovieIdForFeedback));
+            const payload = { action: 'saveInteraction', user: currentUser, movie_id: activeMovieIdForFeedback, title: document.getElementById('f-movie-title').innerText, original_title: currentMovieData?.original_title || ex?.original_title || "", poster: currentMovieData?.poster || ex?.poster || "", director: currentMovieData?.director || ex?.director || "", year: currentMovieData?.year || ex?.year || "", countries: currentMovieData?.countries || ex?.countries || "", genres: currentMovieData?.genres || ex?.genres || "", media_type: currentMovieData?.media_type || ex?.media_type || currentContext, duracion: currentMovieData?.duracion || ex?.duration || "", temporadas: currentMovieData?.temporadas || ex?.seasons || "", estado: currentMovieData?.estado || ex?.status || "", watched: "TRUE", rating: document.getElementById('f-rating').value, comment: document.getElementById('f-comment').value };
             
-            const payload = {
-                action: 'saveInteraction', user: currentUser, movie_id: activeMovieIdForFeedback, title: document.getElementById('f-movie-title').innerText, 
-                original_title: currentMovieData?.original_title || ex?.original_title || "", poster: currentMovieData?.poster || ex?.poster || "",
-                director: currentMovieData?.director || ex?.director || "", year: currentMovieData?.year || ex?.year || "",
-                countries: currentMovieData?.countries || ex?.countries || "", genres: currentMovieData?.genres || ex?.genres || "", 
-                media_type: currentMovieData?.media_type || ex?.media_type || currentContext, 
-                duracion: currentMovieData?.duracion || ex?.duration || "", temporadas: currentMovieData?.temporadas || ex?.seasons || "", estado: currentMovieData?.estado || ex?.status || "",
-                watched: "TRUE", rating: document.getElementById('f-rating').value, comment: document.getElementById('f-comment').value
-            };
-            
-            await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers: { 'Content-Type': 'text/plain' }, body:JSON.stringify(payload)});
-            btn.innerText = "GUARDAR ✅"; btn.disabled = false; closeFeedbackModal(); setTimeout(() => { loadData(); showTab('historial'); }, 600);
+            updateDBStatus('wait');
+            try {
+                await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers: { 'Content-Type': 'text/plain' }, body:JSON.stringify(payload)});
+                btn.innerText = "GUARDAR ✅"; btn.disabled = false; closeFeedbackModal(); setTimeout(() => { loadData(); showTab('historial'); }, 600);
+            } catch(e) { updateDBStatus('error'); btn.innerText = "Error"; btn.disabled = false; }
         }
     </script>
 </body>
