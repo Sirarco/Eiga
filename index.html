@@ -8,16 +8,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --mint: #e2f3f5; --lavender: #f3e8ff; --peach: #fff1e6; }
-        body { background: linear-gradient(135deg, var(--mint), var(--lavender)); min-height: 100vh; color: #2d3748; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: linear-gradient(135deg, var(--mint), var(--lavender)); min-height: 100vh; color: #2d3748; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow-x: hidden; }
         .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; }
         .genre-bubble { cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
         .genre-bubble.selected { transform: scale(1.05); border-color: #8b5cf6; background-color: #8b5cf6 !important; color: white !important;}
         .tab-btn { transition: all 0.2s; }
         .tab-btn.active { color: #8b5cf6; border-bottom: 3px solid #8b5cf6; font-weight: 900; }
+        .context-btn { transition: 0.3s; filter: grayscale(1); opacity: 0.6; }
+        .context-btn.active { filter: grayscale(0); opacity: 1; transform: scale(1.05); font-weight: 900; color: #6d28d9; }
         .animate-up { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .progress-bar-fill { transition: width 0.8s ease-out; }
         select { -webkit-appearance: none; appearance: none; }
+        .platform-badge { background: white; padding: 2px 6px; border-radius: 8px; font-size: 9px; font-weight: bold; border: 1px solid #eee; display: flex; align-items: center; gap: 4px; }
     </style>
 </head>
 <body class="p-3 pb-24">
@@ -35,7 +38,7 @@
     <div id="app-main" class="hidden max-w-md mx-auto space-y-4 relative">
         
         <header class="bg-white/70 p-4 rounded-[30px] shadow-sm backdrop-blur-md border border-white">
-            <div class="flex justify-between items-start mb-2">
+            <div class="flex justify-between items-start mb-4">
                 <div class="flex items-center gap-3">
                     <button onclick="openSettingsModal()" id="main-avatar" class="text-3xl bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg active:scale-90 border-2 border-purple-100 relative">
                         <span class="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center">⚙️</span>
@@ -50,7 +53,20 @@
                     <button onclick="location.reload()" class="bg-white p-2 rounded-xl shadow-sm active:scale-90 font-bold">🔄</button>
                 </div>
             </div>
-            <div id="missions-widget" class="mt-3 space-y-1.5 hidden"></div>
+
+            <div class="flex justify-around bg-purple-50/50 p-1.5 rounded-2xl border border-purple-100/50 mb-2">
+                <button onclick="setContext('movie')" id="ctx-movie" class="context-btn active flex flex-col items-center flex-1">
+                    <span class="text-xl">🎬</span><span class="text-[8px] uppercase tracking-tighter mt-1">Películas</span>
+                </button>
+                <button onclick="setContext('tv')" id="ctx-tv" class="context-btn flex flex-col items-center flex-1">
+                    <span class="text-xl">📺</span><span class="text-[8px] uppercase tracking-tighter mt-1">Series TV</span>
+                </button>
+                <button onclick="setContext('anime')" id="ctx-anime" class="context-btn flex flex-col items-center flex-1">
+                    <span class="text-xl">🌸</span><span class="text-[8px] uppercase tracking-tighter mt-1">Anime</span>
+                </button>
+            </div>
+
+            <div id="missions-widget" class="mt-2 space-y-1.5 hidden"></div>
         </header>
 
         <nav class="flex justify-between bg-white/80 rounded-2xl overflow-hidden shadow-sm backdrop-blur-sm border border-white px-1 relative z-10">
@@ -71,8 +87,8 @@
                 </div>
 
                 <div id="search-text-container" class="hidden space-y-3">
-                    <input type="text" id="search-input" placeholder="Ej: Inception..." class="w-full p-4 rounded-xl bg-white border border-purple-50 font-bold outline-none text-sm">
-                    <button onclick="fetchMovies(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-300">BUSCAR PELÍCULA 🔍</button>
+                    <input type="text" id="search-input" placeholder="Buscar por nombre..." class="w-full p-4 rounded-xl bg-white border border-purple-50 font-bold outline-none text-sm">
+                    <button onclick="fetchMedia(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-300">BUSCAR 🔍</button>
                 </div>
 
                 <div id="search-filter-container" class="space-y-4">
@@ -109,18 +125,18 @@
                             <option value="5">⭐⭐⭐⭐⭐ Aclamada (+8)</option>
                         </select>
                     </div>
-                    <button onclick="fetchMovies(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-300">DESCUBRIR ✨</button>
+                    <button onclick="fetchMedia(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-300">DESCUBRIR ✨</button>
                 </div>
             </div>
             
             <div id="search-title" class="font-black text-purple-900 pl-2 hidden">Resultados:</div>
             <div id="movie-results" class="space-y-3"></div>
-            <button id="btn-load-more" onclick="fetchMovies(true)" class="hidden w-full py-3 bg-white text-purple-600 rounded-xl font-black shadow-sm mt-4 text-xs border border-purple-100">Cargar más resultados ⬇️</button>
+            <button id="btn-load-more" onclick="fetchMedia(true)" class="hidden w-full py-3 bg-white text-purple-600 rounded-xl font-black shadow-sm mt-4 text-xs border border-purple-100">Cargar más resultados ⬇️</button>
         </section>
 
         <section id="tab-prioridades" class="tab-content hidden animate-up pb-10">
             <div class="flex justify-between items-center px-2 mb-3">
-                <h3 class="font-black text-sm text-purple-900">Mi Lista 📝</h3>
+                <h3 class="font-black text-sm text-purple-900" id="pending-title">Mi Lista 📝</h3>
                 <select id="sort-pending" onchange="renderWatchlist()" class="bg-white border border-purple-100 text-[10px] font-bold py-1 px-2 rounded-lg outline-none shadow-sm text-purple-800">
                     <option value="recent">⏱️ Recientes</option>
                     <option value="priority">🔥 Por Prioridad</option>
@@ -131,7 +147,7 @@
         
         <section id="tab-historial" class="tab-content hidden animate-up pb-10">
             <div class="flex justify-between items-center px-2 mb-3">
-                <h3 class="font-black text-sm text-purple-900">Películas Vistas 🍿</h3>
+                <h3 class="font-black text-sm text-purple-900" id="history-title">Películas Vistas 🍿</h3>
                 <select id="sort-history" onchange="renderHistoryTab()" class="bg-white border border-purple-100 text-[10px] font-bold py-1 px-2 rounded-lg outline-none shadow-sm text-purple-800">
                     <option value="recent">⏱️ Recientes</option>
                     <option value="best">🏆 Mejor Nota</option>
@@ -155,7 +171,7 @@
 
         <section id="tab-misiones" class="tab-content hidden space-y-4 animate-up pb-10">
             <h3 class="font-black text-sm text-orange-600 pl-2">Centro de Misiones 🏆</h3>
-            <p class="text-[10px] text-gray-500 pl-2 leading-tight">Activa hasta 3 misiones. Cumple los objetivos al registrar películas como "Vistas".</p>
+            <p class="text-[10px] text-gray-500 pl-2 leading-tight">Activa hasta 3 misiones. Cumple los objetivos al registrar como "Vistas".</p>
             <div id="missions-catalog" class="space-y-3 mt-4"></div>
         </section>
     </div>
@@ -163,7 +179,7 @@
     <div id="matchmaker-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl animate-up">
             <h3 class="font-black text-center text-xl text-purple-900 mb-2">💘 CineMatch</h3>
-            <p class="text-xs text-center text-gray-500 font-bold mb-6">¿Con quién verás la película hoy?</p>
+            <p class="text-xs text-center text-gray-500 font-bold mb-6">¿Con quién verás contenido hoy?</p>
             
             <div id="match-profiles" class="flex justify-center gap-4 mb-6"></div>
             
@@ -230,19 +246,20 @@
                     <img id="detail-poster-img" src="" class="w-24 rounded-xl shadow-xl border-2 border-white object-cover bg-gray-200">
                     <div class="pb-1">
                         <h2 id="detail-title" class="text-xl font-black text-gray-900 leading-tight"></h2>
-                        <div class="flex flex-wrap gap-1 mt-1.5">
-                            <span id="detail-country" class="text-[9px] font-black text-gray-700 bg-white border border-gray-200 px-2 py-0.5 rounded shadow-sm">🌍</span>
-                            <span id="detail-year" class="text-[9px] font-black text-white bg-purple-600 px-2 py-0.5 rounded uppercase shadow-sm"></span>
-                            <span id="detail-rating" class="text-[9px] font-black text-gray-700 bg-white border border-gray-200 px-2 py-0.5 rounded shadow-sm"></span>
-                        </div>
+                        <div id="detail-meta-pills" class="flex flex-wrap gap-1 mt-1.5"></div>
                     </div>
                 </div>
+                
+                <div id="detail-streaming" class="flex flex-wrap gap-2 mb-3 bg-purple-50/50 p-2.5 rounded-xl border border-purple-100 hidden">
+                    <p class="w-full text-[8px] font-black text-purple-400 uppercase">Streaming en Chile:</p>
+                </div>
+
                 <div class="bg-gray-50 p-3 rounded-xl text-[11px] text-gray-600 leading-relaxed shadow-inner border border-gray-100">
                     <p id="detail-overview" class="italic"></p>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs mt-3">
                     <div class="bg-white p-3 rounded-xl border border-purple-50 shadow-sm">
-                        <p class="font-black text-purple-400 uppercase text-[8px] mb-1">Director</p>
+                        <p class="font-black text-purple-400 uppercase text-[8px] mb-1">Director / Creador</p>
                         <div id="detail-director" class="font-bold text-gray-800 leading-tight"></div>
                     </div>
                     <div class="bg-white p-3 rounded-xl border border-purple-50 shadow-sm">
@@ -277,6 +294,7 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwCW3SovPKFtX_w_Ou5pYhVq7AEQRHEJdj19Jz4aFlw8eMrB84UVGVgqZoI3OdVHiJ3/exec';
 
         let currentUser = "";
+        let currentContext = 'movie'; // NAVEGACIÓN DUAL: 'movie', 'tv', 'anime'
         let selectedGenres = [];
         let globalHistory = [];
         let globalFavorites = [];
@@ -287,10 +305,14 @@
         let searchPage = 1;
         let currentSearchMode = 'filters';
 
-        const genres = [{id:28,name:"Acción"}, {id:35,name:"Comedia"}, {id:18,name:"Drama"}, {id:27,name:"Terror"}, {id:10749,name:"Romance"}, {id:878,name:"Sci-Fi"}, {id:53,name:"Thriller"}, {id:16,name:"Animación"}];
+        // DICCIONARIO LOCAL DE GÉNEROS
+        const GENRE_MAP = {
+            28:"Acción", 35:"Comedia", 18:"Drama", 27:"Terror", 10749:"Romance", 878:"Sci-Fi", 53:"Thriller", 16:"Animación", 
+            99:"Documental", 10759:"Acción/Aventura", 10765:"Sci-Fi/Fantasía", 80:"Crimen", 9648:"Misterio", 10768:"War/Politics"
+        };
 
         const LOCAL_MISSIONS = [
-            { id: 'm1', name: 'Cinéfilo Novato', desc: 'Ve 1 película.', target: 1, field: 'total', cond: 'count', val: '' },
+            { id: 'm1', name: 'Cinéfilo Novato', desc: 'Ve 1 obra.', target: 1, field: 'total', cond: 'count', val: '' },
             { id: 'm2', name: 'Crítico Exigente', desc: 'Pon 2 "Obra Maestra".', target: 2, field: 'calificacion', cond: 'includes', val: 'Obra Maestra' },
             { id: 'm3', name: 'Pasado Clásico', desc: 'Ve 2 del siglo 20.', target: 2, field: 'año', cond: '<', val: '2000' }
         ];
@@ -317,7 +339,24 @@
             currentUser = user; document.getElementById('user-selection').classList.add('hidden');
             document.getElementById('app-main').classList.remove('hidden'); document.getElementById('welcome').innerText = user;
             document.getElementById('main-avatar').innerHTML = `${emoji} <span class="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center shadow">⚙️</span>`;
-            renderGenres(); showTab('explorar'); await loadData();
+            setContext('movie'); 
+            await loadData();
+        }
+
+        // --- MANEJO DE CONTEXTOS MULTIVERSO ---
+        function setContext(ctx) {
+            currentContext = ctx;
+            document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`ctx-${ctx}`).classList.add('active');
+            
+            const label = ctx === 'movie' ? 'Películas' : (ctx === 'tv' ? 'Series TV' : 'Animes');
+            document.getElementById('pending-title').innerText = `Mis ${label} 📝`;
+            document.getElementById('history-title').innerText = `${label} Vistas 🍿`;
+            
+            renderGenres();
+            renderWatchlist();
+            renderHistoryTab();
+            if(!document.getElementById('tab-explorar').classList.contains('hidden')) fetchMedia(false);
         }
 
         // --- MANTENEDOR ---
@@ -366,8 +405,10 @@
 
         function calculateMatch(otherUser) {
             const states = getLatestStatesAllUsers();
-            const myPending = states.filter(s => s.usuario === currentUser && !isWatched(s.vista_completa));
-            const otherPending = states.filter(s => s.usuario === otherUser && !isWatched(s.vista_completa));
+            // Matchmaker filtra por el contexto actual
+            let ctxType = currentContext === 'anime' ? 'tv' : currentContext;
+            const myPending = states.filter(s => s.usuario === currentUser && !isWatched(s.vista_completa) && (s.tipo_media || 'movie') === ctxType);
+            const otherPending = states.filter(s => s.usuario === otherUser && !isWatched(s.vista_completa) && (s.tipo_media || 'movie') === ctxType);
             
             let matches = [];
             myPending.forEach(mp => {
@@ -382,7 +423,7 @@
             resCont.classList.remove('hidden'); list.innerHTML = "";
             document.getElementById('match-title').innerText = `Coincidencias con ${otherUser}`;
 
-            if(matches.length === 0) { list.innerHTML = "<p class='text-xs text-center text-gray-400 font-bold'>No tienen películas en común.</p>"; return; }
+            if(matches.length === 0) { list.innerHTML = "<p class='text-xs text-center text-gray-400 font-bold'>No tienen contenido en común en esta categoría.</p>"; return; }
 
             matches.sort((a,b) => b.score - a.score).forEach(m => {
                 const posterUrl = m.poster ? `https://image.tmdb.org/t/p/w200${m.poster}` : 'https://via.placeholder.com/200x300';
@@ -430,16 +471,19 @@
             return 0;
         }
 
-        // --- BÚSQUEDA Y FILTROS ---
+        // --- BÚSQUEDA Y FILTROS MULTIVERSO ---
         function renderGenres() {
             const container = document.getElementById('genre-container'); container.innerHTML = "";
-            genres.forEach(g => {
+            const list = currentContext === 'movie' ? [28,35,18,27,10749,878,53,16,99] : [10759,35,18,10765,80,9648,16,99,10768];
+            selectedGenres = [];
+            list.forEach(id => {
                 const b = document.createElement('div'); b.className = 'genre-bubble px-3 py-1.5 text-[10px] font-black uppercase rounded-lg text-gray-600 bg-white/80 shadow-sm border border-gray-100';
-                b.innerText = g.name;
-                b.onclick = () => { if(selectedGenres.includes(g.id)) { selectedGenres = selectedGenres.filter(i=>i!==g.id); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(g.id); b.classList.add('selected'); } };
+                b.innerText = GENRE_MAP[id] || "Género";
+                b.onclick = () => { if(selectedGenres.includes(id)) { selectedGenres = selectedGenres.filter(i=>i!==id); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(id); b.classList.add('selected'); } };
                 container.appendChild(b);
             });
         }
+        
         function setSearchMode(mode) {
             currentSearchMode = mode;
             if(mode === 'text') {
@@ -454,38 +498,50 @@
         }
         function getTodayDate() { return new Date().toISOString().split('T')[0]; }
 
-        async function fetchMovies(isLoadMore = false) {
+        async function fetchMedia(isLoadMore = false) {
             const container = document.getElementById('movie-results'); const btnMore = document.getElementById('btn-load-more');
             document.getElementById('search-title').classList.remove('hidden');
             
             if(!isLoadMore) { searchPage = 1; container.innerHTML = "<p class='text-center p-6 text-xs font-bold text-purple-400 animate-pulse'>Buscando...</p>"; btnMore.classList.add('hidden'); } 
             else { searchPage++; btnMore.innerText = "Cargando..."; }
 
+            let type = currentContext === 'movie' ? 'movie' : 'tv';
             let url = ""; const today = getTodayDate();
 
             if(currentSearchMode === 'text') {
                 const query = document.getElementById('search-input').value; if(!query) return;
-                url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=${searchPage}&primary_release_date.lte=${today}`;
+                url = `https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=${searchPage}`;
+                let dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date';
+                url += `&${dateField}.lte=${today}`;
             } else {
                 const genreIds = selectedGenres.join(','); const region = document.getElementById('region').value;
-                const maxDur = document.getElementById('duration').value; const decade = document.getElementById('decade').value;
-                const stars = document.getElementById('stars-filter').value;
+                const decade = document.getElementById('decade').value; const stars = document.getElementById('stars-filter').value;
                 
-                url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&page=${searchPage}&with_runtime.lte=${maxDur}`;
-                if(genreIds) url += `&with_genres=${genreIds}`; if(region) url += `&with_origin_country=${region}`;
+                url = `https://api.themoviedb.org/3/discover/${type}?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&page=${searchPage}`;
                 
-                // Filtro Cerrado de Estrellas (QoL)
+                // INYECCIÓN ANIME
+                if(currentContext === 'anime') { url += `&with_genres=16&with_origin_country=JP`; } 
+                else if(genreIds) { url += `&with_genres=${genreIds}`; }
+                
+                if(region && currentContext !== 'anime') url += `&with_origin_country=${region}`;
+                
+                if(currentContext === 'movie') {
+                    const maxDur = document.getElementById('duration').value;
+                    url += `&with_runtime.lte=${maxDur}`;
+                }
+
                 if(stars === "1") url += `&vote_average.gte=0&vote_average.lte=3.9&vote_count.gte=10`;
                 else if(stars === "2") url += `&vote_average.gte=4&vote_average.lte=5.9&vote_count.gte=30`;
                 else if(stars === "3") url += `&vote_average.gte=6&vote_average.lte=6.9&vote_count.gte=50`;
                 else if(stars === "4") url += `&vote_average.gte=7&vote_average.lte=7.9&vote_count.gte=50`;
                 else if(stars === "5") url += `&vote_average.gte=8&vote_average.lte=10&vote_count.gte=50`;
                 
-                if(decade === "classic") { url += `&primary_release_date.lte=1979-12-31`; } 
+                let dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date';
+                if(decade === "classic") { url += `&${dateField}.lte=1979-12-31`; } 
                 else if(decade) {
                     const yS = parseInt(decade); const endLte = `${yS + 9}-12-31` > today ? today : `${yS + 9}-12-31`;
-                    url += `&primary_release_date.gte=${yS}-01-01&primary_release_date.lte=${endLte}`;
-                } else { url += `&primary_release_date.lte=${today}`; }
+                    url += `&${dateField}.gte=${yS}-01-01&${dateField}.lte=${endLte}`;
+                } else { url += `&${dateField}.lte=${today}`; }
             }
 
             try {
@@ -496,14 +552,17 @@
                 data.results.forEach(m => {
                     const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300';
                     const country = m.origin_country && m.origin_country.length > 0 ? m.origin_country[0] : '🌍';
+                    const title = m.title || m.name;
+                    const date = m.release_date || m.first_air_date || '';
+                    const genre = m.genre_ids && m.genre_ids.length > 0 ? (GENRE_MAP[m.genre_ids[0]] || "") : "";
                     
                     container.innerHTML += `
                         <div onclick="openMovieDetail(${m.id}, 'explore')" class="glass p-3 flex gap-3 animate-up shadow-sm cursor-pointer hover:bg-white/90 border border-white">
                             <img src="${posterUrl}" class="w-16 h-24 rounded-lg object-cover shadow border border-gray-100">
                             <div class="flex-1 flex flex-col justify-center">
-                                <h4 class="font-black text-[13px] leading-tight text-gray-800">${m.title}</h4>
-                                <p class="text-[9px] text-gray-400 font-bold uppercase mt-0.5">(${m.original_title})</p>
-                                <p class="text-[9px] text-purple-600 font-black uppercase mt-1.5">${country} • ${m.release_date ? m.release_date.split('-')[0] : 'N/A'} • ⭐ ${m.vote_average.toFixed(1)}</p>
+                                <h4 class="font-black text-[13px] leading-tight text-gray-800">${title}</h4>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase mt-0.5">(${m.original_title || m.original_name || ''})</p>
+                                <p class="text-[9px] text-purple-600 font-black uppercase mt-1.5">${country} • ${date.split('-')[0]} • ${genre}</p>
                             </div>
                         </div>`;
                 });
@@ -511,7 +570,7 @@
             } catch(e) { if(!isLoadMore) container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error.</p>"; }
         }
 
-        // --- DETALLE Y FAVORITOS ---
+        // --- DETALLE, PLATAFORMAS Y FAVORITOS ---
         function checkFav(id) { return globalFavorites.some(f => f.user === currentUser && String(f.id) === String(id)); }
         async function toggleFav(type, id, name) {
             event.stopPropagation(); const isFav = checkFav(id);
@@ -525,57 +584,93 @@
         async function openMovieDetail(movieId, context) {
             const modal = document.getElementById('movie-detail-modal'); modal.classList.remove('hidden');
             document.getElementById('detail-title').innerText = "Cargando...";
+            document.getElementById('detail-streaming').classList.add('hidden');
 
             try {
-                const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_KEY}&language=es-ES&append_to_response=credits`);
-                const det = await res.json();
+                let type = currentContext === 'movie' ? 'movie' : 'tv';
+                if(context === 'pending' || context === 'history') {
+                    const row = globalHistory.find(h => String(h.id_tmdb) === String(movieId));
+                    if(row && row.tipo_media) {
+                        type = row.tipo_media === 'anime' ? 'tv' : row.tipo_media;
+                    }
+                }
 
-                const directorObj = det.credits.crew.find(c => c.job === 'Director'); const castObjs = det.credits.cast.slice(0, 3);
-                const year = det.release_date ? det.release_date.split('-')[0] : 'N/A';
+                // LLAMADA SIMULTÁNEA: Info + Streaming
+                const [det, providers] = await Promise.all([
+                    fetch(`https://api.themoviedb.org/3/${type}/${movieId}?api_key=${TMDB_KEY}&language=es-ES&append_to_response=credits`).then(r=>r.json()),
+                    fetch(`https://api.themoviedb.org/3/${type}/${movieId}/watch/providers?api_key=${TMDB_KEY}`).then(r=>r.json())
+                ]);
+
+                const directorObj = type === 'movie' ? det.credits.crew.find(c => c.job === 'Director') : (det.created_by && det.created_by.length > 0 ? det.created_by[0] : null); 
+                const castObjs = det.credits.cast.slice(0, 5); // EXPANDIDO A 5
+                const year = (det.release_date || det.first_air_date || 'N/A').split('-')[0];
                 const pList = det.production_countries.map(p => p.name).join(', ');
                 const isoCountry = det.production_countries && det.production_countries.length > 0 ? det.production_countries[0].iso_3166_1 : '🌍';
                 
                 document.getElementById('detail-header-bg').style.backgroundImage = `url(https://image.tmdb.org/t/p/w500${det.backdrop_path || det.poster_path})`;
                 document.getElementById('detail-poster-img').src = det.poster_path ? `https://image.tmdb.org/t/p/w300${det.poster_path}` : 'https://via.placeholder.com/300x450';
-                document.getElementById('detail-title').innerHTML = `${det.title} <br><span class="text-[10px] text-gray-500 font-bold leading-none">(${det.original_title})</span>`;
-                document.getElementById('detail-country').innerText = isoCountry;
-                document.getElementById('detail-year').innerText = `${year} • ${det.runtime} MIN`;
-                document.getElementById('detail-rating').innerText = `⭐ ${det.vote_average.toFixed(1)}`;
+                document.getElementById('detail-title').innerHTML = `${det.title || det.name} <br><span class="text-[10px] text-gray-500 font-bold leading-none">(${det.original_title || det.original_name})</span>`;
+                
+                // PILLS DE META (TV STATUS)
+                const pills = document.getElementById('detail-meta-pills');
+                pills.innerHTML = `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">${isoCountry}</span>`;
+                pills.innerHTML += `<span class="bg-purple-600 text-white px-2 py-0.5 rounded text-[8px] font-black">${year}</span>`;
+                if(type === 'tv') {
+                    pills.innerHTML += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">${det.status === 'Returning Series' ? '🟢 EN EMISIÓN' : '🔴 TERMINADA'}</span>`;
+                    pills.innerHTML += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black border border-gray-200">${det.number_of_seasons} TEMP.</span>`;
+                }
+                pills.innerHTML += `<span class="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black">⭐ ${det.vote_average.toFixed(1)}</span>`;
+
+                // LOGOS STREAMING CHILE
+                const streamData = providers.results?.CL?.flatrate;
+                if(streamData && streamData.length > 0) {
+                    const stBox = document.getElementById('detail-streaming');
+                    stBox.classList.remove('hidden');
+                    Array.from(stBox.querySelectorAll('.platform-badge')).forEach(el => el.remove());
+                    streamData.slice(0, 4).forEach(p => {
+                        const b = document.createElement('div'); b.className = 'platform-badge';
+                        b.innerHTML = `<img src="https://image.tmdb.org/t/p/original${p.logo_path}" class="w-3 h-3 rounded-sm"> ${p.provider_name}`;
+                        stBox.appendChild(b);
+                    });
+                }
+
                 document.getElementById('detail-overview').innerText = det.overview || "Sinopsis no disponible.";
 
                 if(directorObj) {
                     const star = checkFav(directorObj.id) ? "⭐" : "☆";
-                    document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200" onclick="toggleFav('Director', ${directorObj.id}, '${directorObj.name.replace(/'/g,"")}')">${directorObj.name} <span id="fav-icon-${directorObj.id}" class="text-xs">${star}</span></span>`;
+                    document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200" onclick="toggleFav('Director', ${directorObj.id}, '${(directorObj.name).replace(/'/g,"")}')">${directorObj.name} <span id="fav-icon-${directorObj.id}" class="text-xs">${star}</span></span>`;
                 } else document.getElementById('detail-director').innerText = "Desconocido";
 
                 document.getElementById('detail-cast').innerHTML = castObjs.map(c => {
                     const star = checkFav(c.id) ? "⭐" : "☆";
-                    return `<div class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 w-max" onclick="toggleFav('Actor', ${c.id}, '${c.name.replace(/'/g,"")}')">${c.name} <span id="fav-icon-${c.id}" class="text-xs">${star}</span></div>`;
+                    return `<div class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 w-max inline-block mr-1 mb-1" onclick="toggleFav('Actor', ${c.id}, '${(c.name).replace(/'/g,"")}')">${c.name} <span id="fav-icon-${c.id}" class="text-xs">${star}</span></div>`;
                 }).join('');
 
-                currentMovieData = { id: det.id, title: det.title.replace(/'/g, ""), original_title: det.original_title.replace(/'/g, ""), poster: det.poster_path, director: directorObj?.name || "", cast: castObjs.map(c=>c.name).join(','), year: year, countries: pList, genres: det.genres.map(g => g.name).join(', ') };
+                currentMovieData = { id: det.id, title: (det.title||det.name).replace(/'/g, ""), original_title: (det.original_title||det.original_name).replace(/'/g, ""), poster: det.poster_path, director: directorObj?.name || "", cast: castObjs.map(c=>c.name).join(','), year: year, countries: pList, genres: det.genres.map(g => g.name).join(', '), media_type: currentContext };
 
                 const actionsDiv = document.getElementById('detail-actions');
                 if (context === 'explore') {
-                    actionsDiv.innerHTML = `<div class="flex gap-2 mb-2"><button onclick="document.getElementById('priority-submenu').classList.remove('hidden')" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-200 active:scale-95 text-xs">🍿 Ver después</button><button onclick="openFeedbackModal('${det.id}', '${det.title.replace(/'/g,"")}')" class="flex-1 py-3 bg-green-500 text-white rounded-xl font-black shadow-lg shadow-green-200 active:scale-95 text-xs">✅ Ya la vi</button></div><div id="priority-submenu" class="hidden flex-col gap-2 mt-2 pt-2 border-t border-gray-100"><button onclick="changeInteractionState('¡Verla Ya!', 'FALSE')" class="w-full py-2 bg-red-500 text-white rounded-lg font-black text-xs active:scale-95">¡Verla Ya! 🔥</button><button onclick="changeInteractionState('Lo antes posible', 'FALSE')" class="w-full py-2 bg-orange-400 text-white rounded-lg font-black text-xs active:scale-95">Lo antes posible ⏰</button><button onclick="changeInteractionState('Luego', 'FALSE')" class="w-full py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-xs active:scale-95">Luego 🛋️</button></div>`;
+                    actionsDiv.innerHTML = `<div class="flex gap-2 mb-2"><button onclick="document.getElementById('priority-submenu').classList.remove('hidden')" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-200 active:scale-95 text-xs">🍿 Ver después</button><button onclick="openFeedbackModal('${det.id}', '${(det.title||det.name).replace(/'/g,"")}')" class="flex-1 py-3 bg-green-500 text-white rounded-xl font-black shadow-lg shadow-green-200 active:scale-95 text-xs">✅ Ya la vi</button></div><div id="priority-submenu" class="hidden flex-col gap-2 mt-2 pt-2 border-t border-gray-100"><button onclick="changeInteractionState('¡Verla Ya!', 'FALSE')" class="w-full py-2 bg-red-500 text-white rounded-lg font-black text-xs active:scale-95">¡Verla Ya! 🔥</button><button onclick="changeInteractionState('Lo antes posible', 'FALSE')" class="w-full py-2 bg-orange-400 text-white rounded-lg font-black text-xs active:scale-95">Lo antes posible ⏰</button><button onclick="changeInteractionState('Luego', 'FALSE')" class="w-full py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-xs active:scale-95">Luego 🛋️</button></div>`;
                 } else if (context === 'pending') {
-                    actionsDiv.innerHTML = `<button onclick="openFeedbackModal('${det.id}', '${det.title.replace(/'/g,"")}')" class="w-full py-3 bg-white text-gray-800 rounded-xl font-black shadow-lg border border-gray-200 active:scale-95 text-xs mb-2">👁️ Marcar como Vista</button><button onclick="changeInteractionState('Ninguna', 'DESCARTADA')" class="w-full py-2 bg-gray-100 text-red-500 rounded-xl font-bold border border-red-100 active:scale-95 text-[10px] uppercase">🗑️ Ya no me interesa</button>`;
+                    actionsDiv.innerHTML = `<button onclick="openFeedbackModal('${det.id}', '${(det.title||det.name).replace(/'/g,"")}')" class="w-full py-3 bg-white text-gray-800 rounded-xl font-black shadow-lg border border-gray-200 active:scale-95 text-xs mb-2">👁️ Marcar como Vista</button><button onclick="changeInteractionState('Ninguna', 'DESCARTADA')" class="w-full py-2 bg-gray-100 text-red-500 rounded-xl font-bold border border-red-100 active:scale-95 text-[10px] uppercase">🗑️ Ya no me interesa</button>`;
                 } else if (context === 'history') {
                     const myI = globalHistory.filter(h => h.usuario === currentUser && String(h.id_tmdb) === String(det.id)); const last = myI[myI.length - 1];
                     actionsDiv.innerHTML = `<div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-200 shadow-inner mt-4"><p class="text-[9px] font-black uppercase text-yellow-600 mb-1 tracking-widest">Tu Reseña</p><p class="font-black text-lg text-gray-800">${last.calificacion}</p>${last.comentario ? `<p class="italic text-gray-600 text-xs mt-2 bg-white/50 p-2 rounded">💬 "${last.comentario}"</p>` : ''}</div>`;
                 }
-            } catch(e) { document.getElementById('detail-title').innerText = "Error al cargar la película."; }
+            } catch(e) { document.getElementById('detail-title').innerText = "Error al cargar."; }
         }
 
+        // BOTÓN CERRAR Z-INDEX 999 PREVIAMENTE INYECTADO EN HTML
         function closeDetailModal() { document.getElementById('movie-detail-modal').classList.add('hidden'); }
         function getLatestStates() { const my = globalHistory.filter(h => h.usuario === currentUser); const latest = new Map(); my.forEach(h => latest.set(h.id_tmdb, h)); return Array.from(latest.values()); }
         function isWatched(val) { return String(val).toUpperCase() === "TRUE" || val === true; }
 
-        // --- ORDENAMIENTO EN PENDIENTES ---
+        // --- ORDENAMIENTO Y LISTAS FILTRADAS POR CONTEXTO ---
         function renderWatchlist() {
             const container = document.getElementById('prioridades-list'); 
             const sortVal = document.getElementById('sort-pending')?.value || 'recent';
-            let pending = getLatestStates().filter(s => s.vista_completa === "FALSE" || s.vista_completa === false).reverse();
+            // FILTRO DE MULTIVERSO
+            let pending = getLatestStates().filter(s => (s.vista_completa === "FALSE" || s.vista_completa === false) && (s.tipo_media || 'movie') === currentContext).reverse();
             
             if(sortVal === 'priority') { pending.sort((a, b) => scorePriority(b.prioridad) - scorePriority(a.prioridad)); }
 
@@ -601,11 +696,11 @@
             });
         }
 
-        // --- ORDENAMIENTO EN VISTAS E ICONO COMENTARIO ---
         function renderHistoryTab() {
             const container = document.getElementById('historial-list'); 
             const sortVal = document.getElementById('sort-history')?.value || 'recent';
-            let views = getLatestStates().filter(s => isWatched(s.vista_completa)).reverse();
+            // FILTRO DE MULTIVERSO
+            let views = getLatestStates().filter(s => isWatched(s.vista_completa) && (s.tipo_media || 'movie') === currentContext).reverse();
 
             if(sortVal === 'best') { views.sort((a, b) => scoreRating(b.calificacion) - scoreRating(a.calificacion)); } 
             else if (sortVal === 'worst') { views.sort((a, b) => scoreRating(a.calificacion) - scoreRating(b.calificacion)); }
@@ -632,46 +727,14 @@
             });
         }
 
-        // --- FAVORITOS ENRIQUECIDOS ---
-        function renderFavoritesTab() {
-            const container = document.getElementById('fav-list'); const myFavs = globalFavorites.filter(f => f.user === currentUser).reverse(); container.innerHTML = "";
-            if(myFavs.length === 0) { container.innerHTML = "<div class='col-span-3 text-center p-6 bg-white/50 rounded-xl'><p class='text-xs text-gray-500 font-bold'>No hay favoritos.</p></div>"; return; }
-            myFavs.forEach(f => { container.innerHTML += `<div onclick="fetchMoviesByPerson(${f.id}, '${f.nombre.replace(/'/g,"")}')" class="bg-white p-2 rounded-xl shadow-sm border border-purple-100 flex flex-col items-center text-center cursor-pointer active:scale-95"><div class="text-xl mb-1">${f.tipo === 'Director' ? '🎬' : '🎭'}</div><p class="font-black text-[10px] text-purple-900 leading-tight">${f.nombre}</p></div>`; });
-        }
-        
-        async function fetchMoviesByPerson(personId, personName) { 
-            document.getElementById('fav-movies-container').classList.remove('hidden'); document.getElementById('fav-movies-title').innerText = `Obras de ${personName}`; 
-            const container = document.getElementById('fav-movies-results'); container.innerHTML = "<p class='text-center p-4 text-xs font-bold text-purple-400 animate-pulse'>Buscando...</p>"; 
-            try { 
-                const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&with_people=${personId}&primary_release_date.lte=${getTodayDate()}`); 
-                const data = await res.json(); container.innerHTML = ""; 
-                if(data.results.length === 0) { container.innerHTML = "<p class='text-xs text-center text-gray-500'>No hay datos.</p>"; return; } 
-                
-                data.results.slice(0, 10).forEach(m => { 
-                    const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300'; 
-                    const country = m.origin_country && m.origin_country.length > 0 ? m.origin_country[0] : '🌍';
-                    
-                    container.innerHTML += `
-                        <div onclick="openMovieDetail(${m.id}, 'explore')" class="bg-white p-3 flex gap-3 animate-up shadow-sm cursor-pointer hover:bg-gray-50 rounded-2xl border border-purple-50">
-                            <img src="${posterUrl}" class="w-12 h-16 rounded-md object-cover shadow-sm">
-                            <div class="flex-1 flex flex-col justify-center">
-                                <h4 class="font-black text-[12px] leading-tight text-gray-800">${m.title}</h4>
-                                <p class="text-[8px] text-gray-400 font-bold uppercase mt-0.5">(${m.original_title})</p>
-                                <p class="text-[9px] text-purple-700 font-black uppercase mt-1">${country} • ${m.release_date ? m.release_date.split('-')[0] : 'N/A'} • ⭐ ${m.vote_average.toFixed(1)}</p>
-                            </div>
-                        </div>`; 
-                }); 
-            } catch(e) { container.innerHTML = "<p class='text-center text-xs text-red-500'>Error.</p>"; } 
-        }
-        function closeFavMovies() { document.getElementById('fav-movies-container').classList.add('hidden'); }
-
+        // --- BASE DE DATOS HÍBRIDA ---
         async function changeInteractionState(priority, watchedState) {
             const btn = event.target; btn.innerText = "⏳..."; btn.disabled = true;
             const payload = { 
                 action: 'saveInteraction', user: currentUser, movie_id: currentMovieData.id, 
                 title: currentMovieData.title, original_title: currentMovieData.original_title, poster: currentMovieData.poster, 
                 director: currentMovieData.director, cast: currentMovieData.cast, year: currentMovieData.year, 
-                countries: currentMovieData.countries, genres: currentMovieData.genres, 
+                countries: currentMovieData.countries, genres: currentMovieData.genres, media_type: currentMovieData.media_type, 
                 watched: watchedState, priority: priority, rating: "", comment: "" 
             };
             await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
@@ -683,7 +746,7 @@
         function closeFeedbackModal() { document.getElementById('feedback-modal').classList.add('hidden'); }
 
         async function submitFeedback() {
-            const btn = event.target; btn.innerText = "⏳ Guardando..."; btn.disabled = true;
+            const btn = event.target; btn.innerText = "⏳..."; btn.disabled = true;
             let existing = globalHistory.find(h => h.id_tmdb == activeMovieIdForFeedback && h.usuario === currentUser);
             
             const payload = {
@@ -694,6 +757,7 @@
                 year: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.year : (existing?.año || ""),
                 countries: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.countries : (existing?.paises || ""), 
                 genres: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.genres : (existing?.generos || ""), 
+                media_type: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.media_type : (existing?.tipo_media || currentContext), 
                 watched: "TRUE", rating: document.getElementById('f-rating').value, comment: document.getElementById('f-comment').value
             };
             
