@@ -3,74 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eiga 映画 v6</title>
+    <title>Eiga 映画</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎦</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --mint: #e2f3f5; --lavender: #f3e8ff; --peach: #fff1e6; }
-        body { background: linear-gradient(135deg, var(--mint), var(--lavender)); min-height: 100vh; color: #2d3748; font-family: -apple-system, system-ui, sans-serif; overflow-x: hidden; }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 28px; }
+        body { background: linear-gradient(135deg, var(--mint), var(--lavender)); min-height: 100vh; color: #2d3748; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; }
+        .genre-bubble { cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .genre-bubble.selected { transform: scale(1.05); border-color: #8b5cf6; background-color: #8b5cf6 !important; color: white !important;}
+        .tab-btn { transition: all 0.2s; }
         .tab-btn.active { color: #8b5cf6; border-bottom: 3px solid #8b5cf6; font-weight: 900; }
-        .context-btn { transition: 0.3s; filter: grayscale(1); opacity: 0.6; }
-        .context-btn.active { filter: grayscale(0); opacity: 1; transform: scale(1.1); font-weight: 900; color: #6d28d9; }
-        .animate-up { animation: slideUp 0.3s ease-out forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .platform-badge { background: white; padding: 2px 6px; border-radius: 8px; font-size: 9px; font-weight: bold; border: 1px solid #eee; display: flex; align-items: center; gap: 4px; }
+        .animate-up { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-bar-fill { transition: width 0.8s ease-out; }
+        select { -webkit-appearance: none; appearance: none; }
     </style>
 </head>
 <body class="p-3 pb-24">
 
     <div id="loading-screen" class="fixed inset-0 bg-white/95 flex flex-col items-center justify-center z-[500] backdrop-blur-md">
-        <div class="animate-bounce text-6xl mb-4 bg-white p-5 rounded-full shadow-2xl">🎦</div>
-        <p class="font-black text-purple-900 animate-pulse tracking-widest text-xs uppercase italic">Eiga Multiverse Loading...</p>
+        <div class="animate-bounce text-6xl mb-4 shadow-xl rounded-full bg-white p-4">🎦</div>
+        <p class="font-black text-purple-900 animate-pulse tracking-widest text-sm uppercase">Preparando la sala...</p>
     </div>
 
-    <div id="user-selection" class="hidden flex flex-col items-center justify-center h-screen space-y-10">
-        <div class="text-center">
-            <h1 class="text-5xl font-black text-purple-950 tracking-tighter drop-shadow-md">Eiga 映画</h1>
-            <p class="text-[10px] font-black text-purple-400 uppercase tracking-[0.3em] mt-2">Family Media Tracker</p>
-        </div>
-        <div id="profile-container" class="flex flex-wrap justify-center gap-8 w-full px-4"></div>
+    <div id="user-selection" class="hidden flex flex-col items-center justify-center h-screen space-y-8">
+        <h1 class="text-5xl font-black text-purple-900 tracking-tighter drop-shadow-sm flex items-center gap-2">Eiga 映画</h1>
+        <div id="profile-container" class="flex flex-wrap justify-center gap-6 w-full px-4"></div>
     </div>
 
-    <div id="app-main" class="hidden max-w-md mx-auto space-y-4">
+    <div id="app-main" class="hidden max-w-md mx-auto space-y-4 relative">
         
-        <header class="bg-white/60 p-4 rounded-[32px] shadow-sm backdrop-blur-md border border-white/50">
-            <div class="flex justify-between items-center mb-4">
+        <header class="bg-white/70 p-4 rounded-[30px] shadow-sm backdrop-blur-md border border-white">
+            <div class="flex justify-between items-start mb-2">
                 <div class="flex items-center gap-3">
-                    <button onclick="openSettingsModal()" id="main-avatar" class="text-3xl bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-lg border-2 border-purple-100 relative">
-                        <span class="absolute -bottom-1 -right-1 bg-gray-900 text-white text-[7px] rounded-full w-4 h-4 flex items-center justify-center">⚙️</span>
+                    <button onclick="openSettingsModal()" id="main-avatar" class="text-3xl bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg active:scale-90 border-2 border-purple-100 relative">
+                        <span class="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center">⚙️</span>
                     </button>
-                    <h2 id="welcome" class="text-lg font-black text-purple-900 truncate max-w-[100px]"></h2>
+                    <div>
+                        <p class="text-[9px] font-black text-purple-400 uppercase tracking-widest">Es tu turno,</p>
+                        <h2 id="welcome" class="text-xl font-black text-purple-900 leading-none"></h2>
+                    </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="openMatchmakerModal()" class="bg-gradient-to-br from-pink-500 to-purple-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black shadow-lg shadow-pink-100 active:scale-95">💘 MATCH</button>
-                    <button onclick="location.reload()" class="bg-white p-2 rounded-xl shadow-sm text-xs">🔄</button>
+                    <button onclick="openMatchmakerModal()" class="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-3 py-2 rounded-xl text-xs font-black shadow-lg shadow-pink-200 active:scale-90 flex items-center gap-1">🍿 MATCH</button>
+                    <button onclick="location.reload()" class="bg-white p-2 rounded-xl shadow-sm active:scale-90 font-bold">🔄</button>
                 </div>
             </div>
-
-            <div class="flex justify-around bg-purple-50/50 p-1.5 rounded-2xl border border-purple-100/50">
-                <button onclick="setContext('movie')" id="ctx-movie" class="context-btn active flex flex-col items-center flex-1">
-                    <span class="text-xl">🎬</span><span class="text-[8px] uppercase tracking-tighter mt-1">Películas</span>
-                </button>
-                <button onclick="setContext('tv')" id="ctx-tv" class="context-btn flex flex-col items-center flex-1">
-                    <span class="text-xl">📺</span><span class="text-[8px] uppercase tracking-tighter mt-1">Series TV</span>
-                </button>
-                <button onclick="setContext('anime')" id="ctx-anime" class="context-btn flex flex-col items-center flex-1">
-                    <span class="text-xl">🌸</span><span class="text-[8px] uppercase tracking-tighter mt-1">Anime</span>
-                </button>
-            </div>
+            <div id="missions-widget" class="mt-3 space-y-1.5 hidden"></div>
         </header>
 
-        <nav class="flex justify-between bg-white/80 rounded-2xl overflow-hidden shadow-sm backdrop-blur-md border border-white px-1 relative z-20">
+        <nav class="flex justify-between bg-white/80 rounded-2xl overflow-hidden shadow-sm backdrop-blur-sm border border-white px-1 relative z-10">
             <button onclick="showTab('explorar')" id="btn-explorar" class="tab-btn active p-3 font-bold text-[9px] uppercase">🔍 Buscar</button>
             <button onclick="showTab('prioridades')" id="btn-prioridades" class="tab-btn p-3 font-bold text-[9px] uppercase">🔥 Pends</button>
             <button onclick="showTab('historial')" id="btn-historial" class="tab-btn p-3 font-bold text-[9px] uppercase">✅ Vistas</button>
             <button onclick="showTab('favoritos')" id="btn-favoritos" class="tab-btn p-3 font-bold text-[9px] uppercase">⭐ Favs</button>
-            <button onclick="showTab('misiones')" id="btn-misiones" class="tab-btn p-3 font-bold text-[9px] uppercase text-orange-600">🏆</button>
+            <button onclick="showTab('misiones')" id="btn-misiones" class="tab-btn p-3 font-bold text-[9px] uppercase text-orange-600">🏆 Misión</button>
         </nav>
 
-        <section id="tab-explorar" class="tab-content space-y-4 animate-up">
+        <section id="tab-explorar" class="tab-content space-y-4 animate-up relative z-0">
             <div class="glass p-5 space-y-4">
                 <div class="flex justify-center mb-2">
                     <div class="bg-purple-100 p-1 rounded-full flex gap-1 shadow-inner w-full max-w-[250px]">
@@ -79,94 +70,213 @@
                     </div>
                 </div>
 
-                <div id="search-text-container" class="hidden"><input type="text" id="search-input" placeholder="Buscar por nombre..." class="w-full p-4 rounded-xl bg-white border border-purple-50 font-bold outline-none text-sm mb-3 shadow-sm"><button onclick="fetchMedia(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg">BUSCAR 🔍</button></div>
+                <div id="search-text-container" class="hidden space-y-3">
+                    <input type="text" id="search-input" placeholder="Ej: Inception..." class="w-full p-4 rounded-xl bg-white border border-purple-50 font-bold outline-none text-sm">
+                    <button onclick="fetchMovies(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-300">BUSCAR PELÍCULA 🔍</button>
+                </div>
 
                 <div id="search-filter-container" class="space-y-4">
                     <div id="genre-container" class="flex flex-wrap gap-2 mt-1"></div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <select id="region" class="w-full p-2.5 bg-white rounded-xl text-[10px] font-bold border border-gray-100 outline-none"><option value="">🌎 Origen</option><option value="CL">🇨🇱 Chile</option><option value="AR|BR|CO|MX|PE|UY|VE">🌮 Latam</option><option value="US">🇺🇸 USA</option><option value="ES|FR|GB|DE|IT">🌍 Europa</option><option value="JP|KR|CN">⛩️ Asia</option></select>
-                        <select id="decade" class="w-full p-2.5 bg-white rounded-xl text-[10px] font-bold border border-gray-100 outline-none"><option value="">📅 Época</option><option value="2020">✨ 2020s</option><option value="2010">📱 2010s</option><option value="2000">💿 2000s</option><option value="1990">📼 90s</option><option value="classic">🎩 Clásicos</option></select>
-                        <select id="stars-filter" class="w-full p-2.5 bg-white rounded-xl text-[10px] font-bold border border-gray-100 outline-none col-span-2"><option value="0">⭐ Calidad (Todas)</option><option value="2">⭐⭐ Pasable</option><option value="4">⭐⭐⭐ Buena</option><option value="6">⭐⭐⭐⭐ Muy Buena</option><option value="8">⭐⭐⭐⭐⭐ Aclamada</option></select>
+                    <div class="grid grid-cols-2 gap-3">
+                        <select id="region" class="w-full p-2.5 bg-white/80 rounded-xl text-[10px] font-bold shadow-sm outline-none border border-gray-100">
+                            <option value="">🌎 Origen (Todos)</option>
+                            <option value="CL">🇨🇱 Chile</option>
+                            <option value="AR|BR|CO|MX|PE|UY|VE">🌮 Latinoamérica</option>
+                            <option value="US">🇺🇸 Hollywood (USA)</option>
+                            <option value="ES|FR|GB|DE|IT|NL|SE">🌍 Europa Occid.</option>
+                            <option value="RU|PL|CZ|HU|RO|UA">❄️ Rusia / Europa Este</option>
+                            <option value="JP|KR|CN|TW|HK">⛩️ Asia Oriental</option>
+                            <option value="IN|PK|BD">🪷 India / Sur Asia</option>
+                            <option value="IR|TR|IL|EG|AE">🐪 Medio Oriente</option>
+                        </select>
+                        <select id="duration" class="w-full p-2.5 bg-white/80 rounded-xl text-[10px] font-bold shadow-sm outline-none border border-gray-100">
+                            <option value="400">⏱️ Duración (Todas)</option>
+                            <option value="90">⏳ Corta (-1h30m)</option>
+                            <option value="120">🎬 Normal (-2h)</option>
+                            <option value="180">🍿 Épica (-3h)</option>
+                        </select>
+                        <select id="decade" class="w-full p-2.5 bg-white/80 rounded-xl text-[10px] font-bold shadow-sm outline-none border border-gray-100">
+                            <option value="">📅 Época (Cualquiera)</option>
+                            <option value="2020">✨ 2020s</option><option value="2010">📱 2010s</option><option value="2000">💿 2000s</option>
+                            <option value="1990">📼 90s</option><option value="1980">📻 80s</option><option value="classic">🎩 Clásicos (-1980)</option>
+                        </select>
+                        <select id="stars-filter" class="w-full p-2.5 bg-white/80 rounded-xl text-[10px] font-bold shadow-sm outline-none border border-gray-100 text-purple-800">
+                            <option value="0">⭐ Calidad (Todas)</option>
+                            <option value="1">⭐ Cine B (0 a 3.9)</option>
+                            <option value="2">⭐⭐ Pasable (4 a 5.9)</option>
+                            <option value="3">⭐⭐⭐ Buena (6 a 6.9)</option>
+                            <option value="4">⭐⭐⭐⭐ Muy Buena (7 a 7.9)</option>
+                            <option value="5">⭐⭐⭐⭐⭐ Aclamada (+8)</option>
+                        </select>
                     </div>
-                    <button onclick="fetchMedia(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg">DESCUBRIR ✨</button>
+                    <button onclick="fetchMovies(false)" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-300">DESCUBRIR ✨</button>
                 </div>
             </div>
+            
+            <div id="search-title" class="font-black text-purple-900 pl-2 hidden">Resultados:</div>
             <div id="movie-results" class="space-y-3"></div>
-            <button id="btn-load-more" onclick="fetchMedia(true)" class="hidden w-full py-3 bg-white text-purple-600 rounded-xl font-black shadow-sm mt-4 text-xs border border-purple-100">Cargar más ⬇️</button>
+            <button id="btn-load-more" onclick="fetchMovies(true)" class="hidden w-full py-3 bg-white text-purple-600 rounded-xl font-black shadow-sm mt-4 text-xs border border-purple-100">Cargar más resultados ⬇️</button>
         </section>
 
-        <section id="tab-prioridades" class="tab-content hidden space-y-3 animate-up pb-10">
-            <div class="flex justify-between items-center px-2"><h3 class="font-black text-sm text-purple-900" id="pending-title">Pendientes</h3></div>
+        <section id="tab-prioridades" class="tab-content hidden animate-up pb-10">
+            <div class="flex justify-between items-center px-2 mb-3">
+                <h3 class="font-black text-sm text-purple-900">Mi Lista 📝</h3>
+                <select id="sort-pending" onchange="renderWatchlist()" class="bg-white border border-purple-100 text-[10px] font-bold py-1 px-2 rounded-lg outline-none shadow-sm text-purple-800">
+                    <option value="recent">⏱️ Recientes</option>
+                    <option value="priority">🔥 Por Prioridad</option>
+                </select>
+            </div>
             <div id="prioridades-list" class="space-y-3"></div>
         </section>
         
-        <section id="tab-historial" class="tab-content hidden space-y-3 animate-up pb-10">
-            <div class="flex justify-between items-center px-2"><h3 class="font-black text-sm text-purple-900" id="history-title">Vistas</h3></div>
+        <section id="tab-historial" class="tab-content hidden animate-up pb-10">
+            <div class="flex justify-between items-center px-2 mb-3">
+                <h3 class="font-black text-sm text-purple-900">Películas Vistas 🍿</h3>
+                <select id="sort-history" onchange="renderHistoryTab()" class="bg-white border border-purple-100 text-[10px] font-bold py-1 px-2 rounded-lg outline-none shadow-sm text-purple-800">
+                    <option value="recent">⏱️ Recientes</option>
+                    <option value="best">🏆 Mejor Nota</option>
+                    <option value="worst">💩 Peor Nota</option>
+                </select>
+            </div>
             <div id="historial-list" class="space-y-3"></div>
         </section>
 
         <section id="tab-favoritos" class="tab-content hidden space-y-3 animate-up pb-10">
-            <h3 class="font-black text-sm text-purple-900 pl-2">Favoritos ⭐</h3>
-            <div id="fav-list" class="grid grid-cols-3 gap-2 mt-2"></div>
+            <h3 class="font-black text-sm text-purple-900 pl-2">Mis Favoritos ⭐</h3>
+            <div id="fav-list" class="grid grid-cols-3 gap-2 mt-3"></div>
             <div id="fav-movies-container" class="hidden mt-6 pt-4 border-t-2 border-purple-100">
-                <div class="flex justify-between items-center mb-4"><h4 id="fav-movies-title" class="font-black text-xs"></h4><button onclick="closeFavMovies()" class="text-[10px] bg-red-100 text-red-600 px-3 py-1 rounded-lg font-black">CERRAR ✕</button></div>
+                <div class="flex justify-between items-center mb-4 pl-2">
+                    <h4 id="fav-movies-title" class="font-black text-xs text-purple-900"></h4>
+                    <button onclick="closeFavMovies()" class="text-[10px] bg-red-100 text-red-600 px-3 py-1 rounded-lg font-black shadow-sm">CERRAR ✕</button>
+                </div>
                 <div id="fav-movies-results" class="space-y-3"></div>
             </div>
         </section>
 
-        <section id="tab-misiones" class="tab-content hidden space-y-3 animate-up pb-10"><h3 class="font-black text-sm text-orange-600 pl-2">Misiones 🏆</h3><div id="missions-catalog" class="space-y-3"></div></section>
+        <section id="tab-misiones" class="tab-content hidden space-y-4 animate-up pb-10">
+            <h3 class="font-black text-sm text-orange-600 pl-2">Centro de Misiones 🏆</h3>
+            <p class="text-[10px] text-gray-500 pl-2 leading-tight">Activa hasta 3 misiones. Cumple los objetivos al registrar películas como "Vistas".</p>
+            <div id="missions-catalog" class="space-y-3 mt-4"></div>
+        </section>
+    </div>
+
+    <div id="matchmaker-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl animate-up">
+            <h3 class="font-black text-center text-xl text-purple-900 mb-2">💘 CineMatch</h3>
+            <p class="text-xs text-center text-gray-500 font-bold mb-6">¿Con quién verás la película hoy?</p>
+            
+            <div id="match-profiles" class="flex justify-center gap-4 mb-6"></div>
+            
+            <div id="match-results-container" class="hidden">
+                <div class="border-t border-purple-100 pt-4 mt-4">
+                    <h4 class="font-black text-xs text-purple-700 text-center uppercase mb-3" id="match-title">Coincidencias</h4>
+                    <div id="match-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+            
+            <button onclick="closeMatchmaker()" class="w-full mt-4 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs">Cerrar Matchmaker</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl animate-up max-h-[90vh] overflow-y-auto">
+            <h3 class="font-black text-center text-xl text-gray-800 mb-4">⚙️ Configuración</h3>
+            
+            <div class="bg-purple-50 p-4 rounded-2xl mb-4">
+                <p class="text-[10px] font-black uppercase text-purple-400 mb-2">Tu Avatar</p>
+                <div class="grid grid-cols-4 gap-3 text-2xl text-center">
+                    <span onclick="setEmoji('🌸')" class="cursor-pointer">🌸</span><span onclick="setEmoji('😎')" class="cursor-pointer">😎</span>
+                    <span onclick="setEmoji('🎮')" class="cursor-pointer">🎮</span><span onclick="setEmoji('🦄')" class="cursor-pointer">🦄</span>
+                    <span onclick="setEmoji('🍿')" class="cursor-pointer">🍿</span><span onclick="setEmoji('🦊')" class="cursor-pointer">🦊</span>
+                    <span onclick="setEmoji('✨')" class="cursor-pointer">✨</span><span onclick="setEmoji('👻')" class="cursor-pointer">👻</span>
+                </div>
+            </div>
+
+            <div class="bg-orange-50 p-4 rounded-2xl mb-4 border border-orange-100">
+                <p class="text-[10px] font-black uppercase text-orange-500 mb-2">Mantenedor de Misiones</p>
+                <div class="space-y-2">
+                    <input type="text" id="m-name" placeholder="Nombre (Ej. Experto Acción)" class="w-full p-2 text-xs rounded border outline-none">
+                    <input type="text" id="m-desc" placeholder="Descripción de misión" class="w-full p-2 text-xs rounded border outline-none">
+                    <div class="flex gap-2">
+                        <select id="m-field" class="flex-1 p-2 text-xs rounded border">
+                            <option value="generos">Género</option><option value="paises">País</option><option value="director">Director</option>
+                        </select>
+                        <select id="m-cond" class="flex-1 p-2 text-xs rounded border">
+                            <option value="includes">Contiene</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="m-val" placeholder="Valor (Ej. Terror)" class="flex-[2] p-2 text-xs rounded border outline-none">
+                        <input type="number" id="m-target" placeholder="Meta" class="flex-1 p-2 text-xs rounded border outline-none">
+                    </div>
+                    <button onclick="createCustomMission()" class="w-full bg-orange-500 text-white text-xs font-black py-2 rounded shadow">Crear Misión ➕</button>
+                </div>
+            </div>
+
+            <button onclick="closeSettingsModal()" class="w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs">Cerrar Configuración</button>
+        </div>
     </div>
 
     <div id="movie-detail-modal" class="fixed inset-0 bg-black/80 hidden flex flex-col justify-end z-[300] backdrop-blur-sm transition-all">
-        <div class="bg-white rounded-t-[36px] w-full max-h-[92vh] overflow-y-auto animate-up flex flex-col pb-10 shadow-2xl relative">
-            <button onclick="closeDetailModal()" class="absolute top-4 right-4 bg-black/60 text-white w-10 h-10 rounded-full font-black text-lg z-[999] shadow-xl border-2 border-white/30 flex items-center justify-center">✕</button>
-            <div id="detail-header-bg" class="w-full h-52 bg-cover bg-center relative rounded-t-[36px]">
-                <div class="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent z-20"></div>
+        <div class="bg-white rounded-t-[30px] w-full max-h-[90vh] overflow-y-auto animate-up flex flex-col relative pb-8 shadow-2xl relative">
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 bg-gray-800 text-white w-10 h-10 rounded-full font-black text-lg z-[999] shadow-xl border-2 border-white/50 flex items-center justify-center">✕</button>
+            
+            <div id="detail-header-bg" class="w-full h-48 bg-cover bg-center relative rounded-t-[30px]">
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm z-10"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent z-20"></div>
             </div>
-            <div class="px-6 -mt-24 relative z-30">
+            <div class="px-5 -mt-20 relative z-30">
                 <div class="flex gap-4 items-end mb-4">
-                    <img id="detail-poster-img" src="" class="w-28 rounded-2xl shadow-2xl border-4 border-white object-cover bg-gray-100">
-                    <div class="pb-2">
-                        <h2 id="detail-title" class="text-2xl font-black text-gray-900 leading-tight"></h2>
-                        <div id="detail-meta-pills" class="flex flex-wrap gap-1 mt-2"></div>
+                    <img id="detail-poster-img" src="" class="w-24 rounded-xl shadow-xl border-2 border-white object-cover bg-gray-200">
+                    <div class="pb-1">
+                        <h2 id="detail-title" class="text-xl font-black text-gray-900 leading-tight"></h2>
+                        <div class="flex flex-wrap gap-1 mt-1.5">
+                            <span id="detail-country" class="text-[9px] font-black text-gray-700 bg-white border border-gray-200 px-2 py-0.5 rounded shadow-sm">🌍</span>
+                            <span id="detail-year" class="text-[9px] font-black text-white bg-purple-600 px-2 py-0.5 rounded uppercase shadow-sm"></span>
+                            <span id="detail-rating" class="text-[9px] font-black text-gray-700 bg-white border border-gray-200 px-2 py-0.5 rounded shadow-sm"></span>
+                        </div>
                     </div>
                 </div>
-                
-                <div id="detail-streaming" class="flex flex-wrap gap-2 mb-4 bg-purple-50 p-2.5 rounded-2xl border border-purple-100 hidden">
-                    <p class="w-full text-[8px] font-black text-purple-400 uppercase mb-1">Disponible en Chile en:</p>
+                <div class="bg-gray-50 p-3 rounded-xl text-[11px] text-gray-600 leading-relaxed shadow-inner border border-gray-100">
+                    <p id="detail-overview" class="italic"></p>
                 </div>
-
-                <div class="bg-gray-50 p-3.5 rounded-2xl text-[12px] text-gray-600 leading-relaxed italic border border-gray-100">
-                    <p id="detail-overview"></p>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 mt-4">
-                    <div class="bg-white p-3 rounded-2xl border border-purple-50 shadow-sm">
-                        <p class="font-black text-purple-400 uppercase text-[8px] mb-1">Director / Creador</p>
-                        <div id="detail-director" class="font-bold text-gray-800 text-xs"></div>
+                <div class="grid grid-cols-2 gap-3 text-xs mt-3">
+                    <div class="bg-white p-3 rounded-xl border border-purple-50 shadow-sm">
+                        <p class="font-black text-purple-400 uppercase text-[8px] mb-1">Director</p>
+                        <div id="detail-director" class="font-bold text-gray-800 leading-tight"></div>
                     </div>
-                    <div class="bg-white p-3 rounded-2xl border border-purple-50 shadow-sm">
-                        <p class="font-black text-purple-400 uppercase text-[8px] mb-1">Protagonistas</p>
-                        <div id="detail-cast" class="font-bold text-gray-800 text-[10px] space-y-1"></div>
+                    <div class="bg-white p-3 rounded-xl border border-purple-50 shadow-sm">
+                        <p class="font-black text-purple-400 uppercase text-[8px] mb-1">Elenco Principal</p>
+                        <div id="detail-cast" class="font-bold text-gray-800 leading-tight space-y-1"></div>
                     </div>
                 </div>
-                <div id="detail-actions" class="pt-6 space-y-2"></div>
+                <div id="detail-actions" class="pt-5 space-y-2"></div>
             </div>
         </div>
     </div>
 
-    <div id="matchmaker-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm"><div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl animate-up"><h3 class="font-black text-center text-xl text-purple-900 mb-2">💘 CineMatch</h3><div id="match-profiles" class="flex justify-center gap-4 mb-6"></div><div id="match-results-container" class="hidden border-t border-purple-100 pt-4"><h4 class="font-black text-xs text-purple-700 text-center uppercase mb-3" id="match-title">Coincidencias</h4><div id="match-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div></div><button onclick="closeMatchmaker()" class="w-full mt-4 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs">Cerrar</button></div></div>
-    <div id="feedback-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm"><div class="bg-white p-6 w-full max-w-sm rounded-3xl animate-up shadow-2xl"><h3 class="font-black text-purple-900 text-lg text-center">¿Qué tal estuvo?</h3><p id="f-movie-title" class="text-[10px] font-bold text-gray-500 text-center uppercase tracking-widest bg-gray-50 py-2 rounded-lg my-2"></p><select id="f-rating" class="w-full p-3 rounded-xl bg-purple-50 font-bold border-none text-sm outline-none"><option value="😍 Obra Maestra">😍 Obra Maestra</option><option value="😊 Muy buena">😊 Muy buena</option><option value="😐 Pasable">😐 Pasable</option><option value="💩 Mala">💩 Mala</option></select><textarea id="f-comment" placeholder="Comentario opcional..." class="w-full p-3 rounded-xl bg-purple-50 text-sm h-20 border-none outline-none mt-2"></textarea><div class="flex gap-2 mt-4"><button onclick="closeFeedbackModal()" class="py-3 px-4 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs">Cancelar</button><button onclick="submitFeedback()" class="flex-1 py-3 bg-green-500 text-white rounded-xl font-black shadow-lg">GUARDAR VISTA ✅</button></div></div></div>
-    <div id="settings-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm"><div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl animate-up"><h3 class="font-black text-center text-xl text-gray-800 mb-4">⚙️ Configuración</h3><div class="bg-purple-50 p-4 rounded-2xl mb-4"><p class="text-[10px] font-black uppercase text-purple-400 mb-2">Cambiar Avatar</p><div class="grid grid-cols-4 gap-3 text-2xl text-center"><span onclick="setEmoji('🌸')" class="cursor-pointer">🌸</span><span onclick="setEmoji('😎')" class="cursor-pointer">😎</span><span onclick="setEmoji('🎮')" class="cursor-pointer">🎮</span><span onclick="setEmoji('🥑')" class="cursor-pointer">🥑</span><span onclick="setEmoji('🦊')" class="cursor-pointer">🦊</span><span onclick="setEmoji('🦄')" class="cursor-pointer">🦄</span><span onclick="setEmoji('🍿')" class="cursor-pointer">🍿</span><span onclick="setEmoji('✨')" class="cursor-pointer">✨</span></div></div><button onclick="closeSettingsModal()" class="w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs">Cerrar</button></div></div>
+    <div id="feedback-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm">
+        <div class="bg-white p-6 w-full max-w-sm space-y-4 rounded-3xl animate-up shadow-2xl">
+            <h3 class="font-black text-purple-900 text-lg text-center">¿Qué tal estuvo?</h3>
+            <p id="f-movie-title" class="text-[10px] font-bold text-gray-500 text-center uppercase tracking-widest bg-gray-50 py-2 rounded-lg"></p>
+            <select id="f-rating" class="w-full p-3 rounded-xl bg-purple-50 font-bold border-none text-sm text-gray-800 outline-none">
+                <option value="😍 Obra Maestra">😍 Obra Maestra</option><option value="😊 Muy buena">😊 Muy buena</option>
+                <option value="😐 Pasable">😐 Pasable</option><option value="💩 Mala">💩 Mala</option>
+            </select>
+            <textarea id="f-comment" placeholder="Escribe tu opinión o comentario..." class="w-full p-3 rounded-xl bg-purple-50 text-sm h-20 border-none outline-none"></textarea>
+            <div class="flex gap-2">
+                <button onclick="closeFeedbackModal()" class="py-3 px-4 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs">Cancelar</button>
+                <button onclick="submitFeedback()" class="flex-1 py-3 bg-green-500 text-white rounded-xl font-black shadow-lg shadow-green-200 text-xs">GUARDAR VISTA ✅</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // === CONFIGURACIÓN ===
+        // === CONFIGURACIÓN MÁXIMA ===
         const TMDB_KEY = '366d109fec623ff7a4227017bfd58f0b'; 
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwCW3SovPKFtX_w_Ou5pYhVq7AEQRHEJdj19Jz4aFlw8eMrB84UVGVgqZoI3OdVHiJ3/exec';
 
         let currentUser = "";
-        let currentContext = "movie"; // 'movie', 'tv', 'anime'
-        let currentSearchMode = "filters";
         let selectedGenres = [];
         let globalHistory = [];
         let globalFavorites = [];
@@ -175,9 +285,15 @@
         let currentMovieData = null; 
         let activeMovieIdForFeedback = null;
         let searchPage = 1;
+        let currentSearchMode = 'filters';
 
-        // DICCIONARIO LOCAL DE GÉNEROS (Para evitar llamadas extra)
-        const GENRE_MAP = {28:"Acción",35:"Comedia",18:"Drama",27:"Terror",10749:"Romance",878:"Sci-Fi",53:"Thriller",16:"Animación",10751:"Familiar",99:"Documental",10765:"Sci-Fi/Fantasía",10759:"Acción/Avent.",80:"Crimen",9648:"Misterio"};
+        const genres = [{id:28,name:"Acción"}, {id:35,name:"Comedia"}, {id:18,name:"Drama"}, {id:27,name:"Terror"}, {id:10749,name:"Romance"}, {id:878,name:"Sci-Fi"}, {id:53,name:"Thriller"}, {id:16,name:"Animación"}];
+
+        const LOCAL_MISSIONS = [
+            { id: 'm1', name: 'Cinéfilo Novato', desc: 'Ve 1 película.', target: 1, field: 'total', cond: 'count', val: '' },
+            { id: 'm2', name: 'Crítico Exigente', desc: 'Pon 2 "Obra Maestra".', target: 2, field: 'calificacion', cond: 'includes', val: 'Obra Maestra' },
+            { id: 'm3', name: 'Pasado Clásico', desc: 'Ve 2 del siglo 20.', target: 2, field: 'año', cond: '<', val: '2000' }
+        ];
 
         window.onload = async () => {
             try {
@@ -186,224 +302,404 @@
                 renderProfiles();
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('user-selection').classList.remove('hidden');
-            } catch(e) { console.error("Error inicial", e); }
+            } catch(e) { alert("Error de conexión con Sheets."); }
         };
 
         function renderProfiles() {
-            const container = document.getElementById('profile-container'); container.innerHTML = "";
+            const container = document.getElementById('profile-container');
+            container.innerHTML = "";
             profiles.forEach(p => {
-                container.innerHTML += `<button onclick="selectUser('${p.user}', '${p.emoji}')" class="flex flex-col items-center"><div class="w-20 h-20 bg-white rounded-full mb-3 shadow-2xl flex items-center justify-center text-4xl border-4 border-white active:scale-90 transition transform hover:-translate-y-1">${p.emoji}</div><span class="font-black text-purple-900 text-base">${p.user}</span></button>`;
+                container.innerHTML += `<button onclick="selectUser('${p.user}', '${p.emoji}')" class="flex flex-col items-center"><div class="w-24 h-24 bg-white rounded-full mb-2 shadow-2xl flex items-center justify-center text-5xl border-4 border-white active:scale-90 transition">${p.emoji}</div><span class="font-black text-purple-900 text-lg">${p.user}</span></button>`;
             });
         }
 
         async function selectUser(user, emoji) {
             currentUser = user; document.getElementById('user-selection').classList.add('hidden');
             document.getElementById('app-main').classList.remove('hidden'); document.getElementById('welcome').innerText = user;
-            document.getElementById('main-avatar').innerText = emoji;
-            setContext('movie'); await loadData();
+            document.getElementById('main-avatar').innerHTML = `${emoji} <span class="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center shadow">⚙️</span>`;
+            renderGenres(); showTab('explorar'); await loadData();
         }
 
-        // --- MANEJO DE CONTEXTOS (MACRO BAR) ---
-        function setContext(ctx) {
-            currentContext = ctx;
-            document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`ctx-${ctx}`).classList.add('active');
-            
-            // Títulos dinámicos según contexto
-            const label = ctx === 'movie' ? 'Películas' : (ctx === 'tv' ? 'Series TV' : 'Anime');
-            document.getElementById('pending-title').innerText = `Mis ${label} Pendientes`;
-            document.getElementById('history-title').innerText = `${label} Vistas`;
-            
-            renderGenres();
-            renderWatchlist();
-            renderHistoryTab();
-            if(document.getElementById('tab-explorar').classList.contains('hidden') === false) fetchMedia(false);
+        // --- MANTENEDOR ---
+        function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
+        function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
+        
+        async function setEmoji(em) {
+            document.getElementById('main-avatar').innerHTML = `${em} <span class="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center shadow">⚙️</span>`;
+            const p = profiles.find(x => x.user === currentUser); if(p) p.emoji = em; 
+            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'updateEmoji', user: currentUser, emoji: em }) });
+        }
+
+        async function createCustomMission() {
+            const mData = {
+                action: 'createCustomMission', id: 'c_' + Date.now(),
+                nombre: document.getElementById('m-name').value, desc: document.getElementById('m-desc').value,
+                meta: document.getElementById('m-target').value, campo: document.getElementById('m-field').value,
+                condicion: document.getElementById('m-cond').value, valor: document.getElementById('m-val').value
+            };
+            if(!mData.nombre || !mData.meta) return alert("Faltan datos");
+            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(mData) });
+            alert("Misión creada."); loadData();
         }
 
         async function loadData() {
             try {
                 const [hRes, fRes, mRes] = await Promise.all([ fetch(`${GAS_URL}?action=getHistory`), fetch(`${GAS_URL}?action=getFavorites`), fetch(`${GAS_URL}?action=getMissionsDB`) ]);
                 globalHistory = await hRes.json(); globalFavorites = await fRes.json(); globalMissionsDB = await mRes.json();
+                if(!Array.isArray(globalFavorites)) globalFavorites = []; if(!Array.isArray(globalMissionsDB)) globalMissionsDB = [];
                 renderWatchlist(); renderHistoryTab(); renderFavoritesTab(); renderMissions();
             } catch(e) { console.log("Data no disponible."); }
         }
 
+        // --- MATCHMAKER ---
+        function openMatchmakerModal() {
+            document.getElementById('matchmaker-modal').classList.remove('hidden');
+            const cont = document.getElementById('match-profiles'); cont.innerHTML = "";
+            document.getElementById('match-results-container').classList.add('hidden');
+            profiles.forEach(p => {
+                if(p.user !== currentUser) {
+                    cont.innerHTML += `<button onclick="calculateMatch('${p.user}')" class="flex flex-col items-center"><div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center text-2xl active:scale-90 border border-purple-200">${p.emoji}</div><span class="text-[10px] font-black mt-1">${p.user}</span></button>`;
+                }
+            });
+        }
+        function closeMatchmaker() { document.getElementById('matchmaker-modal').classList.add('hidden'); }
+
+        function calculateMatch(otherUser) {
+            const states = getLatestStatesAllUsers();
+            const myPending = states.filter(s => s.usuario === currentUser && !isWatched(s.vista_completa));
+            const otherPending = states.filter(s => s.usuario === otherUser && !isWatched(s.vista_completa));
+            
+            let matches = [];
+            myPending.forEach(mp => {
+                const matchOp = otherPending.find(op => String(op.id_tmdb) === String(mp.id_tmdb));
+                if(matchOp) {
+                    let score = scorePriority(mp.prioridad) + scorePriority(matchOp.prioridad);
+                    matches.push({ id: mp.id_tmdb, title: mp.titulo, poster: mp.poster, score: score });
+                }
+            });
+
+            const resCont = document.getElementById('match-results-container'); const list = document.getElementById('match-list');
+            resCont.classList.remove('hidden'); list.innerHTML = "";
+            document.getElementById('match-title').innerText = `Coincidencias con ${otherUser}`;
+
+            if(matches.length === 0) { list.innerHTML = "<p class='text-xs text-center text-gray-400 font-bold'>No tienen películas en común.</p>"; return; }
+
+            matches.sort((a,b) => b.score - a.score).forEach(m => {
+                const posterUrl = m.poster ? `https://image.tmdb.org/t/p/w200${m.poster}` : 'https://via.placeholder.com/200x300';
+                let matchLabel = m.score >= 5 ? '🔥 PERFECTO' : (m.score >= 3 ? '👍 BUENO' : '🤷‍♂️ OK');
+                let color = m.score >= 5 ? 'text-red-500 bg-red-50 border-red-200' : 'text-purple-600 bg-purple-50 border-purple-200';
+                list.innerHTML += `<div onclick="openMovieDetail(${m.id}, 'explore')" class="bg-white p-2 rounded-xl flex gap-3 items-center border border-gray-100 shadow-sm"><img src="${posterUrl}" class="w-10 h-14 rounded object-cover"><div class="flex-1"><p class="text-xs font-black text-gray-800 leading-tight">${m.title}</p><span class="text-[8px] font-black uppercase px-2 py-0.5 rounded border ${color} inline-block mt-1">${matchLabel}</span></div></div>`;
+            });
+        }
+        function scorePriority(p) { if(!p) return 1; if(p.includes('Ya') || p.includes('YA')) return 3; if(p.includes('antes') || p.includes('Finde')) return 2; return 1; }
+        function scoreRating(r) { if(!r) return 0; if(r.includes('Obra')) return 4; if(r.includes('Muy')) return 3; if(r.includes('Pasable')) return 2; if(r.includes('Mala')) return 1; return 0; }
+        function getLatestStatesAllUsers() { const latest = new Map(); globalHistory.forEach(h => latest.set(`${h.usuario}_${h.id_tmdb}`, h)); return Array.from(latest.values()); }
+
+        // --- SISTEMA MISIONES ---
+        function getMyMissions() { const p = profiles.find(x => x.user === currentUser); return p && p.missions ? p.missions.split(',').filter(x => x) : []; }
+        async function toggleMission(mId) {
+            let active = getMyMissions();
+            if (active.includes(mId)) active = active.filter(id => id !== mId);
+            else { if(active.length >= 3) { alert("Máximo 3 misiones."); return; } active.push(mId); }
+            const p = profiles.find(x => x.user === currentUser); if(p) p.missions = active.join(',');
+            renderMissions();
+            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'updateMissions', user: currentUser, missions: active.join(',') }) });
+        }
+        function renderMissions() {
+            const activeIds = getMyMissions(); const widget = document.getElementById('missions-widget'); const catalog = document.getElementById('missions-catalog');
+            const myViews = getLatestStates().filter(s => isWatched(s.vista_completa));
+            widget.innerHTML = ""; catalog.innerHTML = "";
+            if(activeIds.length > 0) widget.classList.remove('hidden'); else widget.classList.add('hidden');
+
+            const ALL_MISSIONS = [...LOCAL_MISSIONS, ...globalMissionsDB];
+            ALL_MISSIONS.forEach(m => {
+                const isActive = activeIds.includes(m.id || m.ID); let rawProgress = evaluateMission(m, myViews);
+                let target = parseInt(m.meta || m.target); let progress = rawProgress > target ? target : rawProgress;
+                let percent = (progress / target) * 100; let isComplete = progress >= target;
+
+                catalog.innerHTML += `<div class="bg-white p-4 rounded-2xl shadow-sm border ${isComplete ? 'border-green-300 bg-green-50' : 'border-gray-100'}"><h4 class="font-black text-xs text-gray-800">${m.name || m.nombre}</h4><p class="text-[9px] text-gray-500 mt-0.5">${m.desc}</p><div class="mt-2 flex items-center gap-2"><div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="bg-green-500 h-1.5 rounded-full" style="width: ${percent}%"></div></div><span class="text-[8px] font-black">${progress}/${target}</span></div>${!isComplete ? `<button onclick="toggleMission('${m.id}')" class="mt-2 w-full py-2 rounded-lg text-[9px] font-black ${isActive ? 'bg-gray-100 text-gray-600' : 'bg-orange-100 text-orange-600'}">${isActive ? 'Ocultar' : 'Activar'}</button>` : ''}</div>`;
+
+                if(isActive) widget.innerHTML += `<div class="flex items-center gap-2"><p class="text-[8px] font-black uppercase w-16 truncate ${isComplete ? 'text-green-600' : 'text-orange-500'}">${m.name || m.nombre}</p><div class="flex-1 bg-white/50 rounded-full h-1.5 overflow-hidden shadow-inner border border-white/40"><div class="bg-gradient-to-r ${isComplete ? 'from-green-400 to-green-600' : 'from-orange-400 to-red-400'} h-full rounded-full" style="width: ${percent}%"></div></div></div>`;
+            });
+        }
+        function evaluateMission(m, vistas) {
+            let field = m.campo || m.field; let cond = m.condicion || m.cond; let val = m.valor || m.val;
+            if(field === 'total') return vistas.length;
+            if(cond === 'includes') return vistas.filter(v => v[field] && String(v[field]).toLowerCase().includes(String(val).toLowerCase())).length;
+            if(cond === '<') return vistas.filter(v => parseInt(v[field]) < parseInt(val)).length;
+            return 0;
+        }
+
+        // --- BÚSQUEDA Y FILTROS ---
         function renderGenres() {
             const container = document.getElementById('genre-container'); container.innerHTML = "";
-            const list = currentContext === 'movie' ? [28,35,18,27,10749,878,53,16,99] : [10759,35,18,10765,80,9648,16,99];
-            selectedGenres = [];
-            list.forEach(id => {
-                const b = document.createElement('div'); b.className = 'genre-bubble px-3 py-1.5 text-[9px] font-black uppercase rounded-lg text-gray-500 bg-white shadow-sm border border-gray-100';
-                b.innerText = GENRE_MAP[id] || "Género";
-                b.onclick = () => { if(selectedGenres.includes(id)) { selectedGenres = selectedGenres.filter(i=>i!==id); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(id); b.classList.add('selected'); } };
+            genres.forEach(g => {
+                const b = document.createElement('div'); b.className = 'genre-bubble px-3 py-1.5 text-[10px] font-black uppercase rounded-lg text-gray-600 bg-white/80 shadow-sm border border-gray-100';
+                b.innerText = g.name;
+                b.onclick = () => { if(selectedGenres.includes(g.id)) { selectedGenres = selectedGenres.filter(i=>i!==g.id); b.classList.remove('selected'); } else if(selectedGenres.length < 3) { selectedGenres.push(g.id); b.classList.add('selected'); } };
                 container.appendChild(b);
             });
         }
+        function setSearchMode(mode) {
+            currentSearchMode = mode;
+            if(mode === 'text') {
+                document.getElementById('mode-text-btn').classList.replace('text-gray-400', 'text-purple-800'); document.getElementById('mode-text-btn').classList.add('bg-white', 'shadow-sm');
+                document.getElementById('mode-filter-btn').classList.replace('text-purple-800', 'text-gray-400'); document.getElementById('mode-filter-btn').classList.remove('bg-white', 'shadow-sm');
+                document.getElementById('search-text-container').classList.remove('hidden'); document.getElementById('search-filter-container').classList.add('hidden');
+            } else {
+                document.getElementById('mode-filter-btn').classList.replace('text-gray-400', 'text-purple-800'); document.getElementById('mode-filter-btn').classList.add('bg-white', 'shadow-sm');
+                document.getElementById('mode-text-btn').classList.replace('text-purple-800', 'text-gray-400'); document.getElementById('mode-text-btn').classList.remove('bg-white', 'shadow-sm');
+                document.getElementById('search-filter-container').classList.remove('hidden'); document.getElementById('search-text-container').classList.add('hidden');
+            }
+        }
+        function getTodayDate() { return new Date().toISOString().split('T')[0]; }
 
-        // --- BÚSQUEDA MULTIVERSO ---
-        async function fetchMedia(isLoadMore = false) {
+        async function fetchMovies(isLoadMore = false) {
             const container = document.getElementById('movie-results'); const btnMore = document.getElementById('btn-load-more');
             document.getElementById('search-title').classList.remove('hidden');
-            if(!isLoadMore) { searchPage = 1; container.innerHTML = "<p class='text-center p-6 text-xs font-black text-purple-400 animate-pulse uppercase'>Abriendo portal...</p>"; btnMore.classList.add('hidden'); } else { searchPage++; }
+            
+            if(!isLoadMore) { searchPage = 1; container.innerHTML = "<p class='text-center p-6 text-xs font-bold text-purple-400 animate-pulse'>Buscando...</p>"; btnMore.classList.add('hidden'); } 
+            else { searchPage++; btnMore.innerText = "Cargando..."; }
 
-            let type = currentContext === 'movie' ? 'movie' : 'tv';
-            let url = `https://api.themoviedb.org/3/discover/${type}?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&page=${searchPage}`;
-            
-            if(currentContext === 'anime') url += `&with_genres=16&with_origin_country=JP`;
-            
-            const genreIds = selectedGenres.join(','); const region = document.getElementById('region').value;
-            const decade = document.getElementById('decade').value; const stars = document.getElementById('stars-filter').value;
-            
-            if(genreIds) url += `&with_genres=${genreIds}`;
-            if(region) url += `&with_origin_country=${region}`;
-            if(stars > 0) url += `&vote_average.gte=${stars}&vote_count.gte=50`;
-            if(decade) { 
-                let field = type === 'movie' ? 'primary_release_date' : 'first_air_date';
-                if(decade==='classic') url += `&${field}.lte=1989-12-31`;
-                else url += `&${field}.gte=${decade}-01-01&${field}.lte=${parseInt(decade)+9}-12-31`;
+            let url = ""; const today = getTodayDate();
+
+            if(currentSearchMode === 'text') {
+                const query = document.getElementById('search-input').value; if(!query) return;
+                url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=${searchPage}&primary_release_date.lte=${today}`;
+            } else {
+                const genreIds = selectedGenres.join(','); const region = document.getElementById('region').value;
+                const maxDur = document.getElementById('duration').value; const decade = document.getElementById('decade').value;
+                const stars = document.getElementById('stars-filter').value;
+                
+                url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&page=${searchPage}&with_runtime.lte=${maxDur}`;
+                if(genreIds) url += `&with_genres=${genreIds}`; if(region) url += `&with_origin_country=${region}`;
+                
+                // Filtro Cerrado de Estrellas (QoL)
+                if(stars === "1") url += `&vote_average.gte=0&vote_average.lte=3.9&vote_count.gte=10`;
+                else if(stars === "2") url += `&vote_average.gte=4&vote_average.lte=5.9&vote_count.gte=30`;
+                else if(stars === "3") url += `&vote_average.gte=6&vote_average.lte=6.9&vote_count.gte=50`;
+                else if(stars === "4") url += `&vote_average.gte=7&vote_average.lte=7.9&vote_count.gte=50`;
+                else if(stars === "5") url += `&vote_average.gte=8&vote_average.lte=10&vote_count.gte=50`;
+                
+                if(decade === "classic") { url += `&primary_release_date.lte=1979-12-31`; } 
+                else if(decade) {
+                    const yS = parseInt(decade); const endLte = `${yS + 9}-12-31` > today ? today : `${yS + 9}-12-31`;
+                    url += `&primary_release_date.gte=${yS}-01-01&primary_release_date.lte=${endLte}`;
+                } else { url += `&primary_release_date.lte=${today}`; }
             }
 
             try {
                 const res = await fetch(url); const data = await res.json();
                 if(!isLoadMore) container.innerHTML = "";
-                data.results.forEach(m => {
-                    const poster = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300';
-                    const title = m.title || m.name;
-                    const date = m.release_date || m.first_air_date || '';
-                    const year = date.split('-')[0];
-                    const country = m.origin_country && m.origin_country.length > 0 ? m.origin_country[0] : '🌍';
-                    const genre = m.genre_ids && m.genre_ids.length > 0 ? GENRE_MAP[m.genre_ids[0]] : '';
+                if(data.results.length === 0 && !isLoadMore) { container.innerHTML = "<p class='text-xs text-gray-500 text-center'>No hay resultados.</p>"; return; }
 
+                data.results.forEach(m => {
+                    const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300';
+                    const country = m.origin_country && m.origin_country.length > 0 ? m.origin_country[0] : '🌍';
+                    
                     container.innerHTML += `
-                        <div onclick="openMovieDetail(${m.id}, 'explore')" class="glass p-3 flex gap-3 animate-up shadow-sm cursor-pointer hover:bg-white/90">
-                            <img src="${poster}" class="w-16 h-24 rounded-xl object-cover shadow-sm border border-white">
+                        <div onclick="openMovieDetail(${m.id}, 'explore')" class="glass p-3 flex gap-3 animate-up shadow-sm cursor-pointer hover:bg-white/90 border border-white">
+                            <img src="${posterUrl}" class="w-16 h-24 rounded-lg object-cover shadow border border-gray-100">
                             <div class="flex-1 flex flex-col justify-center">
-                                <h4 class="font-black text-[13px] leading-tight text-gray-800">${title}</h4>
-                                <p class="text-[9px] text-gray-400 font-bold uppercase mt-0.5">${m.original_title || m.original_name || ''}</p>
-                                <p class="text-[9px] text-purple-600 font-black uppercase mt-1.5">${country} • ${year} • ${genre}</p>
-                                <span class="text-[9px] font-bold text-gray-400">⭐ ${m.vote_average.toFixed(1)}/10</span>
+                                <h4 class="font-black text-[13px] leading-tight text-gray-800">${m.title}</h4>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase mt-0.5">(${m.original_title})</p>
+                                <p class="text-[9px] text-purple-600 font-black uppercase mt-1.5">${country} • ${m.release_date ? m.release_date.split('-')[0] : 'N/A'} • ⭐ ${m.vote_average.toFixed(1)}</p>
                             </div>
                         </div>`;
                 });
-                if(data.page < data.total_pages) btnMore.classList.remove('hidden'); else btnMore.classList.add('hidden');
-            } catch(e) { console.error(e); }
+                if(data.page < data.total_pages) { btnMore.classList.remove('hidden'); btnMore.innerText = "Cargar más ⬇️"; } else btnMore.classList.add('hidden');
+            } catch(e) { if(!isLoadMore) container.innerHTML = "<p class='text-xs text-red-500 text-center'>Error.</p>"; }
         }
 
-        // --- FICHA TÉCNICA (STREAMING + TEMPORADAS) ---
-        async function openMovieDetail(id, context) {
+        // --- DETALLE Y FAVORITOS ---
+        function checkFav(id) { return globalFavorites.some(f => f.user === currentUser && String(f.id) === String(id)); }
+        async function toggleFav(type, id, name) {
+            event.stopPropagation(); const isFav = checkFav(id);
+            const icon = document.getElementById(`fav-icon-${id}`); if(icon) icon.innerText = isFav ? "☆" : "⭐";
+            if(isFav) globalFavorites = globalFavorites.filter(f => !(f.user === currentUser && String(f.id) === String(id)));
+            else globalFavorites.push({user: currentUser, tipo: type, id: id, nombre: name});
+            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'toggleFavorite', user: currentUser, tipo: type, id_persona: id, nombre: name }) });
+            renderFavoritesTab();
+        }
+
+        async function openMovieDetail(movieId, context) {
             const modal = document.getElementById('movie-detail-modal'); modal.classList.remove('hidden');
             document.getElementById('detail-title').innerText = "Cargando...";
-            document.getElementById('detail-streaming').classList.add('hidden');
-            document.getElementById('detail-meta-pills').innerHTML = "";
 
             try {
-                let type = currentContext === 'movie' ? 'movie' : 'tv';
-                // El historial nos dice qué tipo es realmente si venimos de pendientes
-                if(context === 'pending' || context === 'history') {
-                    const row = globalHistory.find(h => String(h.id_tmdb) === String(id));
-                    if(row && row.tipo_media) type = row.tipo_media;
-                }
+                const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_KEY}&language=es-ES&append_to_response=credits`);
+                const det = await res.json();
 
-                const [det, providers] = await Promise.all([
-                    fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_KEY}&language=es-ES&append_to_response=credits`).then(r=>r.json()),
-                    fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${TMDB_KEY}`).then(r=>r.json())
-                ]);
-
-                const year = (det.release_date || det.first_air_date || 'N/A').split('-')[0];
+                const directorObj = det.credits.crew.find(c => c.job === 'Director'); const castObjs = det.credits.cast.slice(0, 3);
+                const year = det.release_date ? det.release_date.split('-')[0] : 'N/A';
+                const pList = det.production_countries.map(p => p.name).join(', ');
+                const isoCountry = det.production_countries && det.production_countries.length > 0 ? det.production_countries[0].iso_3166_1 : '🌍';
+                
                 document.getElementById('detail-header-bg').style.backgroundImage = `url(https://image.tmdb.org/t/p/w500${det.backdrop_path || det.poster_path})`;
-                document.getElementById('detail-poster-img').src = `https://image.tmdb.org/t/p/w300${det.poster_path}`;
-                document.getElementById('detail-title').innerHTML = `${det.title || det.name} <br><span class="text-[9px] text-gray-400 font-bold leading-none">(${det.original_title || det.original_name})</span>`;
-                
-                // PILLS DE META
-                const pills = document.getElementById('detail-meta-pills');
-                pills.innerHTML = `<span class="bg-purple-600 text-white px-2 py-0.5 rounded text-[8px] font-black">${year}</span>`;
-                pills.innerHTML += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[8px] font-black uppercase">${det.status === 'Returning Series' ? '🟢 EN EMISIÓN' : (type==='tv'?'🔴 TERMINADA':det.status)}</span>`;
-                if(type === 'tv') pills.innerHTML += `<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[8px] font-black uppercase">${det.number_of_seasons} TEMP.</span>`;
-                pills.innerHTML += `<span class="bg-yellow-400 text-black px-2 py-0.5 rounded text-[8px] font-black uppercase">⭐ ${det.vote_average.toFixed(1)}</span>`;
-
-                // STREAMING EN CHILE
-                const providersCL = providers.results?.CL?.flatrate;
-                if(providersCL) {
-                    const st = document.getElementById('detail-streaming'); st.classList.remove('hidden');
-                    const oldLogos = st.querySelectorAll('.platform-badge'); oldLogos.forEach(l => l.remove());
-                    providersCL.slice(0, 4).forEach(p => {
-                        const b = document.createElement('div'); b.className = 'platform-badge';
-                        b.innerHTML = `<img src="https://image.tmdb.org/t/p/original${p.logo_path}" class="w-4 h-4 rounded"> ${p.provider_name}`;
-                        st.appendChild(b);
-                    });
-                }
-
+                document.getElementById('detail-poster-img').src = det.poster_path ? `https://image.tmdb.org/t/p/w300${det.poster_path}` : 'https://via.placeholder.com/300x450';
+                document.getElementById('detail-title').innerHTML = `${det.title} <br><span class="text-[10px] text-gray-500 font-bold leading-none">(${det.original_title})</span>`;
+                document.getElementById('detail-country').innerText = isoCountry;
+                document.getElementById('detail-year').innerText = `${year} • ${det.runtime} MIN`;
+                document.getElementById('detail-rating').innerText = `⭐ ${det.vote_average.toFixed(1)}`;
                 document.getElementById('detail-overview').innerText = det.overview || "Sinopsis no disponible.";
-                const director = type === 'movie' ? det.credits.crew.find(c => c.job === 'Director')?.name : det.created_by?.[0]?.name;
-                document.getElementById('detail-director').innerText = director || "No listado";
-                
-                // CAST AMPLIADO A 5
-                document.getElementById('detail-cast').innerHTML = det.credits.cast.slice(0, 5).map(c => `<div class="bg-gray-100 px-2 py-1 rounded-lg border border-gray-200">${c.name}</div>`).join('');
 
-                currentMovieData = { id: det.id, title: (det.title || det.name).replace(/'/g,""), original_title: (det.original_title || det.original_name).replace(/'/g,""), poster: det.poster_path, director: director || "", year: year, countries: det.production_countries?.[0]?.iso_3166_1 || "🌍", genres: det.genres?.[0]?.name || "", media_type: type };
+                if(directorObj) {
+                    const star = checkFav(directorObj.id) ? "⭐" : "☆";
+                    document.getElementById('detail-director').innerHTML = `<span class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200" onclick="toggleFav('Director', ${directorObj.id}, '${directorObj.name.replace(/'/g,"")}')">${directorObj.name} <span id="fav-icon-${directorObj.id}" class="text-xs">${star}</span></span>`;
+                } else document.getElementById('detail-director').innerText = "Desconocido";
 
-                const actions = document.getElementById('detail-actions');
+                document.getElementById('detail-cast').innerHTML = castObjs.map(c => {
+                    const star = checkFav(c.id) ? "⭐" : "☆";
+                    return `<div class="tag-fav bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 w-max" onclick="toggleFav('Actor', ${c.id}, '${c.name.replace(/'/g,"")}')">${c.name} <span id="fav-icon-${c.id}" class="text-xs">${star}</span></div>`;
+                }).join('');
+
+                currentMovieData = { id: det.id, title: det.title.replace(/'/g, ""), original_title: det.original_title.replace(/'/g, ""), poster: det.poster_path, director: directorObj?.name || "", cast: castObjs.map(c=>c.name).join(','), year: year, countries: pList, genres: det.genres.map(g => g.name).join(', ') };
+
+                const actionsDiv = document.getElementById('detail-actions');
                 if (context === 'explore') {
-                    actions.innerHTML = `<div class="flex gap-2"><button onclick="document.getElementById('p-sub').classList.toggle('hidden')" class="flex-1 py-3 bg-purple-600 text-white rounded-2xl font-black text-xs">🍿 Ver después</button><button onclick="openFeedbackModal('${det.id}','${currentMovieData.title}')" class="flex-1 py-3 bg-green-500 text-white rounded-2xl font-black text-xs">✅ Ya la vi</button></div><div id="p-sub" class="hidden flex flex-col gap-2 mt-2 pt-2 border-t"><button onclick="saveState('¡Verla Ya!','FALSE')" class="bg-red-500 text-white p-2 rounded-xl text-xs font-black">¡Verla Ya! 🔥</button><button onclick="saveState('Pronto','FALSE')" class="bg-orange-400 text-white p-2 rounded-xl text-xs font-black">Pronto ⏰</button><button onclick="saveState('Algún día','FALSE')" class="bg-gray-200 text-gray-700 p-2 rounded-xl text-xs font-bold">Algún día 💤</button></div>`;
+                    actionsDiv.innerHTML = `<div class="flex gap-2 mb-2"><button onclick="document.getElementById('priority-submenu').classList.remove('hidden')" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-black shadow-lg shadow-purple-200 active:scale-95 text-xs">🍿 Ver después</button><button onclick="openFeedbackModal('${det.id}', '${det.title.replace(/'/g,"")}')" class="flex-1 py-3 bg-green-500 text-white rounded-xl font-black shadow-lg shadow-green-200 active:scale-95 text-xs">✅ Ya la vi</button></div><div id="priority-submenu" class="hidden flex-col gap-2 mt-2 pt-2 border-t border-gray-100"><button onclick="changeInteractionState('¡Verla Ya!', 'FALSE')" class="w-full py-2 bg-red-500 text-white rounded-lg font-black text-xs active:scale-95">¡Verla Ya! 🔥</button><button onclick="changeInteractionState('Lo antes posible', 'FALSE')" class="w-full py-2 bg-orange-400 text-white rounded-lg font-black text-xs active:scale-95">Lo antes posible ⏰</button><button onclick="changeInteractionState('Luego', 'FALSE')" class="w-full py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-xs active:scale-95">Luego 🛋️</button></div>`;
                 } else if (context === 'pending') {
-                    actions.innerHTML = `<button onclick="openFeedbackModal('${det.id}','${currentMovieData.title}')" class="w-full py-3 bg-white text-gray-800 border-2 border-gray-100 rounded-2xl font-black text-xs mb-2 shadow-sm">👁️ Calificar y marcar Vista</button><button onclick="saveState('Ninguna','DESCARTADA')" class="w-full py-2 bg-gray-100 text-red-500 rounded-xl font-bold text-[10px] uppercase">🗑️ Ya no me interesa</button>`;
+                    actionsDiv.innerHTML = `<button onclick="openFeedbackModal('${det.id}', '${det.title.replace(/'/g,"")}')" class="w-full py-3 bg-white text-gray-800 rounded-xl font-black shadow-lg border border-gray-200 active:scale-95 text-xs mb-2">👁️ Marcar como Vista</button><button onclick="changeInteractionState('Ninguna', 'DESCARTADA')" class="w-full py-2 bg-gray-100 text-red-500 rounded-xl font-bold border border-red-100 active:scale-95 text-[10px] uppercase">🗑️ Ya no me interesa</button>`;
                 } else if (context === 'history') {
-                    const row = globalHistory.find(h => h.id_tmdb == id && h.usuario === currentUser && isWatched(h.vista_completa));
-                    actions.innerHTML = `<div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-200 mt-4"><p class="text-[9px] font-black uppercase text-yellow-600 mb-1">Tu Reseña</p><p class="font-black text-gray-800">${row?.calificacion || ''}</p><p class="italic text-gray-600 text-xs mt-2">${row?.comentario ? `"${row.comentario}"` : ''}</p></div>`;
+                    const myI = globalHistory.filter(h => h.usuario === currentUser && String(h.id_tmdb) === String(det.id)); const last = myI[myI.length - 1];
+                    actionsDiv.innerHTML = `<div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-200 shadow-inner mt-4"><p class="text-[9px] font-black uppercase text-yellow-600 mb-1 tracking-widest">Tu Reseña</p><p class="font-black text-lg text-gray-800">${last.calificacion}</p>${last.comentario ? `<p class="italic text-gray-600 text-xs mt-2 bg-white/50 p-2 rounded">💬 "${last.comentario}"</p>` : ''}</div>`;
                 }
-            } catch(e) { console.error(e); }
-        }
-
-        async function saveState(priority, watched) {
-            const btn = event.target; btn.innerText = "...";
-            const payload = { action:'saveInteraction', user:currentUser, movie_id:currentMovieData.id, title:currentMovieData.title, original_title:currentMovieData.original_title, poster:currentMovieData.poster, director:currentMovieData.director, year:currentMovieData.year, countries:currentMovieData.countries, genres:currentMovieData.genres, media_type:currentMovieData.media_type, priority:priority, watched:watched };
-            await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload) });
-            closeDetailModal(); setTimeout(loadData, 800);
+            } catch(e) { document.getElementById('detail-title').innerText = "Error al cargar la película."; }
         }
 
         function closeDetailModal() { document.getElementById('movie-detail-modal').classList.add('hidden'); }
-
-        // --- RENDERIZADO DE LISTAS (FILTRADO POR CONTEXTO) ---
-        function renderWatchlist() {
-            const container = document.getElementById('prioridades-list');
-            const states = getLatestStates().filter(s => s.tipo_media === (currentContext==='anime'?'tv':currentContext)); // Ajuste anime
-            const pending = states.filter(s => s.vista_completa === "FALSE" || s.vista_completa === false).reverse();
-            container.innerHTML = "";
-            if(pending.length===0) { container.innerHTML="<p class='text-center text-xs text-gray-400 p-10 font-bold'>Lista vacía en este contexto.</p>"; return; }
-            pending.forEach(p => {
-                container.innerHTML += `<div onclick="openMovieDetail(${p.id_tmdb},'pending')" class="bg-white p-3 rounded-2xl flex gap-3 items-center shadow-sm border border-purple-50"><img src="https://image.tmdb.org/t/p/w200${p.poster}" class="w-14 h-20 rounded-lg object-cover shadow-sm"><div class="flex-1"><p class="font-black text-[13px] text-gray-800 leading-tight">${p.titulo}</p><p class="text-[9px] font-bold text-gray-400 mt-1">${p.paises} • ${p.año}</p><span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600">${p.prioridad}</span></div><button onclick="event.stopPropagation(); openFeedbackModal('${p.id_tmdb}','${p.titulo}')" class="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-2 rounded-xl text-[9px] font-black shadow-sm active:scale-90">Calificar ✏️</button></div>`;
-            });
-        }
-
-        function renderHistoryTab() {
-            const container = document.getElementById('historial-list');
-            const views = getLatestStates().filter(s => s.tipo_media === (currentContext==='anime'?'tv':currentContext) && isWatched(s.vista_completa)).reverse();
-            container.innerHTML = "";
-            if(views.length===0) { container.innerHTML="<p class='text-center text-xs text-gray-400 p-10 font-bold'>Aún no has visto nada aquí.</p>"; return; }
-            views.forEach(h => {
-                container.innerHTML += `<div onclick="openMovieDetail(${h.id_tmdb},'history')" class="bg-white p-3 rounded-2xl text-xs shadow-sm flex gap-3 border border-purple-50"><img src="https://image.tmdb.org/t/p/w200${h.poster}" class="w-14 h-20 rounded-lg object-cover shadow-sm"><div class="flex-1 flex flex-col justify-center"><p class="font-black text-[13px] text-gray-800 leading-tight">${h.titulo}</p><p class="text-[9px] font-bold text-gray-500 mt-1">${h.paises} • ${h.año}</p><span class="text-[9px] font-black text-gray-800 bg-gray-100 px-2 py-0.5 rounded mt-1.5 inline-block w-max">${h.calificacion} ${h.comentario?'💬':''}</span></div></div>`;
-            });
-        }
-
-        // --- FUNCIONES CORE REUTILIZADAS ---
         function getLatestStates() { const my = globalHistory.filter(h => h.usuario === currentUser); const latest = new Map(); my.forEach(h => latest.set(h.id_tmdb, h)); return Array.from(latest.values()); }
-        function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
-        function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
+        function isWatched(val) { return String(val).toUpperCase() === "TRUE" || val === true; }
+
+        // --- ORDENAMIENTO EN PENDIENTES ---
+        function renderWatchlist() {
+            const container = document.getElementById('prioridades-list'); 
+            const sortVal = document.getElementById('sort-pending')?.value || 'recent';
+            let pending = getLatestStates().filter(s => s.vista_completa === "FALSE" || s.vista_completa === false).reverse();
+            
+            if(sortVal === 'priority') { pending.sort((a, b) => scorePriority(b.prioridad) - scorePriority(a.prioridad)); }
+
+            container.innerHTML = "";
+            if(pending.length === 0) { container.innerHTML = "<div class='glass p-6 text-center mt-2'><p class='text-xs text-purple-800 font-bold'>Lista limpia.</p></div>"; return; }
+            
+            pending.forEach(p => {
+                const posterUrl = p.poster ? `https://image.tmdb.org/t/p/w200${p.poster}` : 'https://via.placeholder.com/200x300';
+                const orig = p.titulo_original ? `<p class="text-[8px] text-gray-400 font-bold uppercase leading-tight mt-0.5">(${p.titulo_original})</p>` : '';
+                const ctry = p.paises ? p.paises.split(',')[0].trim() : '🌍';
+                
+                container.innerHTML += `
+                    <div onclick="openMovieDetail(${p.id_tmdb}, 'pending')" class="bg-white p-3 rounded-2xl flex gap-3 items-center shadow-sm border border-purple-50 cursor-pointer active:scale-[0.98]">
+                        <img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100">
+                        <div class="flex-1 pr-1">
+                            <p class="font-black text-[13px] text-gray-800 leading-tight">${p.titulo}</p>
+                            ${orig}
+                            <p class="text-[9px] font-bold text-gray-500 mt-1">${ctry} • ${p.año}</p>
+                            <span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase mt-1 bg-purple-50 text-purple-600">${p.prioridad}</span>
+                        </div>
+                        <button onclick="event.stopPropagation(); openFeedbackModal('${p.id_tmdb}', '${p.titulo.replace(/'/g,"")}')" class="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm active:scale-90 z-40">Calificar ✏️</button>
+                    </div>`;
+            });
+        }
+
+        // --- ORDENAMIENTO EN VISTAS E ICONO COMENTARIO ---
+        function renderHistoryTab() {
+            const container = document.getElementById('historial-list'); 
+            const sortVal = document.getElementById('sort-history')?.value || 'recent';
+            let views = getLatestStates().filter(s => isWatched(s.vista_completa)).reverse();
+
+            if(sortVal === 'best') { views.sort((a, b) => scoreRating(b.calificacion) - scoreRating(a.calificacion)); } 
+            else if (sortVal === 'worst') { views.sort((a, b) => scoreRating(a.calificacion) - scoreRating(b.calificacion)); }
+
+            container.innerHTML = "";
+            if(views.length === 0) { container.innerHTML = "<div class='bg-white/50 p-6 text-center rounded-2xl'><p class='text-xs text-gray-500'>Aún no hay reseñas.</p></div>"; return; }
+            
+            views.forEach(h => {
+                const posterUrl = h.poster ? `https://image.tmdb.org/t/p/w200${h.poster}` : 'https://via.placeholder.com/200x300';
+                const orig = h.titulo_original ? `<p class="text-[8px] text-gray-400 font-bold uppercase leading-tight mt-0.5">(${h.titulo_original})</p>` : '';
+                const ctry = h.paises ? h.paises.split(',')[0].trim() : '🌍';
+                const comIcon = h.comentario ? '<span class="text-xs ml-1 opacity-70">💬</span>' : '';
+                
+                container.innerHTML += `
+                    <div onclick="openMovieDetail(${h.id_tmdb}, 'history')" class="bg-white p-3 rounded-2xl text-xs shadow-sm flex gap-3 border border-purple-50 cursor-pointer active:scale-95">
+                        <img src="${posterUrl}" class="w-14 h-20 rounded-lg object-cover shadow-sm border border-gray-100">
+                        <div class="flex-1 flex flex-col justify-center">
+                            <p class="font-black text-[13px] text-gray-800 leading-tight">${h.titulo}</p>
+                            ${orig}
+                            <p class="text-[9px] font-bold text-gray-500 mt-1">${ctry} • ${h.año} • ${h.director}</p>
+                            <span class="text-[9px] font-black text-gray-800 bg-gray-100 px-2 py-0.5 rounded mt-1.5 inline-block w-max shadow-sm">${h.calificacion} ${comIcon}</span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // --- FAVORITOS ENRIQUECIDOS ---
+        function renderFavoritesTab() {
+            const container = document.getElementById('fav-list'); const myFavs = globalFavorites.filter(f => f.user === currentUser).reverse(); container.innerHTML = "";
+            if(myFavs.length === 0) { container.innerHTML = "<div class='col-span-3 text-center p-6 bg-white/50 rounded-xl'><p class='text-xs text-gray-500 font-bold'>No hay favoritos.</p></div>"; return; }
+            myFavs.forEach(f => { container.innerHTML += `<div onclick="fetchMoviesByPerson(${f.id}, '${f.nombre.replace(/'/g,"")}')" class="bg-white p-2 rounded-xl shadow-sm border border-purple-100 flex flex-col items-center text-center cursor-pointer active:scale-95"><div class="text-xl mb-1">${f.tipo === 'Director' ? '🎬' : '🎭'}</div><p class="font-black text-[10px] text-purple-900 leading-tight">${f.nombre}</p></div>`; });
+        }
+        
+        async function fetchMoviesByPerson(personId, personName) { 
+            document.getElementById('fav-movies-container').classList.remove('hidden'); document.getElementById('fav-movies-title').innerText = `Obras de ${personName}`; 
+            const container = document.getElementById('fav-movies-results'); container.innerHTML = "<p class='text-center p-4 text-xs font-bold text-purple-400 animate-pulse'>Buscando...</p>"; 
+            try { 
+                const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&language=es-ES&sort_by=popularity.desc&with_people=${personId}&primary_release_date.lte=${getTodayDate()}`); 
+                const data = await res.json(); container.innerHTML = ""; 
+                if(data.results.length === 0) { container.innerHTML = "<p class='text-xs text-center text-gray-500'>No hay datos.</p>"; return; } 
+                
+                data.results.slice(0, 10).forEach(m => { 
+                    const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300'; 
+                    const country = m.origin_country && m.origin_country.length > 0 ? m.origin_country[0] : '🌍';
+                    
+                    container.innerHTML += `
+                        <div onclick="openMovieDetail(${m.id}, 'explore')" class="bg-white p-3 flex gap-3 animate-up shadow-sm cursor-pointer hover:bg-gray-50 rounded-2xl border border-purple-50">
+                            <img src="${posterUrl}" class="w-12 h-16 rounded-md object-cover shadow-sm">
+                            <div class="flex-1 flex flex-col justify-center">
+                                <h4 class="font-black text-[12px] leading-tight text-gray-800">${m.title}</h4>
+                                <p class="text-[8px] text-gray-400 font-bold uppercase mt-0.5">(${m.original_title})</p>
+                                <p class="text-[9px] text-purple-700 font-black uppercase mt-1">${country} • ${m.release_date ? m.release_date.split('-')[0] : 'N/A'} • ⭐ ${m.vote_average.toFixed(1)}</p>
+                            </div>
+                        </div>`; 
+                }); 
+            } catch(e) { container.innerHTML = "<p class='text-center text-xs text-red-500'>Error.</p>"; } 
+        }
+        function closeFavMovies() { document.getElementById('fav-movies-container').classList.add('hidden'); }
+
+        async function changeInteractionState(priority, watchedState) {
+            const btn = event.target; btn.innerText = "⏳..."; btn.disabled = true;
+            const payload = { 
+                action: 'saveInteraction', user: currentUser, movie_id: currentMovieData.id, 
+                title: currentMovieData.title, original_title: currentMovieData.original_title, poster: currentMovieData.poster, 
+                director: currentMovieData.director, cast: currentMovieData.cast, year: currentMovieData.year, 
+                countries: currentMovieData.countries, genres: currentMovieData.genres, 
+                watched: watchedState, priority: priority, rating: "", comment: "" 
+            };
+            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+            closeDetailModal(); setTimeout(() => { loadData(); }, 800);
+        }
+
         function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`tab-${t}`).classList.remove('hidden'); document.getElementById(`btn-${t}`).classList.add('active'); }
         function openFeedbackModal(id, title) { event.stopPropagation(); closeDetailModal(); activeMovieIdForFeedback = id; document.getElementById('f-movie-title').innerText = title; document.getElementById('feedback-modal').classList.remove('hidden'); }
         function closeFeedbackModal() { document.getElementById('feedback-modal').classList.add('hidden'); }
+
         async function submitFeedback() {
-            const btn = event.target; btn.innerText = "...";
-            let ex = globalHistory.find(h => h.id_tmdb == activeMovieIdForFeedback && h.usuario === currentUser);
-            const payload = { action:'saveInteraction', user:currentUser, movie_id:activeMovieIdForFeedback, title:document.getElementById('f-movie-title').innerText, original_title:ex?.titulo_original || "", poster:ex?.poster || "", director:ex?.director || "", year:ex?.año || "", countries:ex?.paises || "", genres:ex?.generos || "", media_type:ex?.tipo_media || currentContext, watched:"TRUE", rating:document.getElementById('f-rating').value, comment:document.getElementById('f-comment').value };
-            await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload) });
-            closeFeedbackModal(); setTimeout(() => { loadData(); showTab('historial'); }, 600);
+            const btn = event.target; btn.innerText = "⏳ Guardando..."; btn.disabled = true;
+            let existing = globalHistory.find(h => h.id_tmdb == activeMovieIdForFeedback && h.usuario === currentUser);
+            
+            const payload = {
+                action: 'saveInteraction', user: currentUser, movie_id: activeMovieIdForFeedback, title: document.getElementById('f-movie-title').innerText, 
+                original_title: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.original_title : (existing?.titulo_original || ""),
+                poster: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.poster : (existing?.poster || ""),
+                director: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.director : (existing?.director || ""),
+                year: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.year : (existing?.año || ""),
+                countries: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.countries : (existing?.paises || ""), 
+                genres: currentMovieData?.id == activeMovieIdForFeedback ? currentMovieData.genres : (existing?.generos || ""), 
+                watched: "TRUE", rating: document.getElementById('f-rating').value, comment: document.getElementById('f-comment').value
+            };
+            
+            await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers: { 'Content-Type': 'text/plain' }, body:JSON.stringify(payload)});
+            btn.innerText = "GUARDAR VISTA ✅"; btn.disabled = false; closeFeedbackModal(); setTimeout(() => { loadData(); showTab('historial'); }, 600);
         }
-        function setSearchMode(m) { currentSearchMode = m; document.getElementById('search-text-container').classList.toggle('hidden', m==='filters'); document.getElementById('search-filter-container').classList.toggle('hidden', m==='text'); }
-        function getTodayDate() { return new Date().toISOString().split('T')[0]; }
-        // Matchmaker & Misiones (Lógica v5 integrada simplificada para no exceder límites de código)
-        function renderFavoritesTab() { /* ... similar a v5 ... */ }
-        function renderMissions() { /* ... similar a v5 ... */ }
     </script>
 </body>
 </html>
